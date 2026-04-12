@@ -6,6 +6,7 @@ from app.retrieval.service import (
     _force_concise_cited_answer,
     _lexical_confidence,
     _polish_answer_text,
+    _polish_summary_text,
     _question_terms,
     _should_force_cited_answer,
     _top_score,
@@ -101,3 +102,29 @@ def test_polish_answer_text_preserves_citations() -> None:
     polished = _polish_answer_text("He acted emotionally during the situation, where he [C1]")
     assert "where he" not in polished.lower()
     assert "[C1]" in polished
+
+
+def test_polish_summary_text_trims_dangling_tail_and_keeps_citations() -> None:
+    noisy = (
+        "- Scope of Services: Provider will deliver document review and compliance reporting services as defined in SOW-001 . "
+        "- Term and Termination: The Agreement is for twelve months with thirty days cure notice for material breach . "
+        "- Con [C1] [C2]"
+    )
+
+    polished = _polish_summary_text(noisy)
+    assert "- Con" not in polished
+    assert polished.endswith("[C1] [C2]")
+    assert ". [C1]" in polished or ". [C2]" in polished
+
+
+def test_polish_summary_text_removes_bullet_prefixes() -> None:
+    noisy = (
+        "- Scope of Services includes document review and compliance reporting. "
+        "- The agreement term is twelve months from January 1, 2026. "
+        "- The agreement is governed by New York law. [C1] [C2]"
+    )
+
+    polished = _polish_summary_text(noisy)
+    assert "- " not in polished
+    assert polished.startswith("Scope of Services")
+    assert polished.endswith("[C1] [C2]")

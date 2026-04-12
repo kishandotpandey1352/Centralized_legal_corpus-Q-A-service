@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.llm.service import build_grounded_prompt, generate_answer_with_ollama
+from app.llm.service import build_grounded_prompt, build_summary_prompt, generate_answer_with_ollama
 from app.retrieval.embeddings import embed_texts, vector_to_pg_literal
 
 
@@ -269,6 +269,36 @@ def _polish_answer_text(answer_text: str) -> str:
     return f"{core} {' '.join(ordered_unique)}".strip()
 
 
+def _polish_summary_text(summary_text: str) -> str:
+    stripped = summary_text.strip()
+    if not stripped or stripped == "Insufficient evidence in provided documents.":
+        return stripped
+
+    citations = re.findall(r"\[C\d+\]", stripped)
+    core = re.sub(r"\s*\[C\d+\]\s*", " ", stripped)
+    core = re.sub(r"(?m)^\s*-\s*", "", core)
+    core = re.sub(r"\s+-\s+", " ", core)
+    core = re.sub(r"\s+", " ", core).strip()
+
+    if core and not core.endswith((".", "!", "?")):
+        last_terminal = max(core.rfind("."), core.rfind("!"), core.rfind("?"), core.rfind(";"), core.rfind(":"))
+        if last_terminal >= 20:
+            core = core[: last_terminal + 1].strip()
+
+    core = re.sub(r"\s+([,.;:!?])", r"\1", core).strip()
+    if core and not core.endswith((".", "!", "?")):
+        core = f"{core}."
+
+    if not citations:
+        return core
+
+    ordered_unique: list[str] = []
+    for citation in citations:
+        if citation not in ordered_unique:
+            ordered_unique.append(citation)
+    return f"{core} {' '.join(ordered_unique)}".strip()
+
+
 def _attach_adjacent_context(db: Session, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not results:
         return results
@@ -432,4 +462,97 @@ def answer_question(db: Session, question: str, top_k: int = 5) -> dict[str, Any
         "top_score": round(top_score, 6),
         "raw_top_score": round(top_score_raw, 6),
         "lexical_confidence": round(lexical_conf, 6),
+    }
+
+
+def _fallback_summary(contexts: list[dict[str, Any]]) -> str:
+    if not contexts:
+        return "Insufficient evidence in provided documents."
+
+    bullets: list[str] = []
+    for index, item in enumerate(contexts[:4], start=1):
+        chunk_text = str(item.get("chunk_text", "")).strip()
+        if not chunk_text:
+            continue
+        cleaned = _clean_sentence(chunk_text)
+        if cleaned and cleaned != "Insufficient evidence in provided documents.":
+            bullets.append(f"- {cleaned} [C{index}]")
+
+    if not bullets:
+        return "Insufficient evidence in provided documents."
+    return "\n".join(bullets)
+
+
+def summarize_document(db: Session, source_file: str, max_chunks: int | None = None) -> dict[str, Any]:
+    cleaned_source = source_file.strip()
+    if not cleaned_source:
+        raise ValueError("source_file cannot be empty")
+
+    chunk_limit = max_chunks if max_chunks is not None else settings.summary_default_chunks
+    chunk_limit = max(1, min(chunk_limit, 20))
+
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                c.id,
+                c.chunk_index,
+                c.chunk_text,
+                c.page_range,
+                c.section_title,
+                d.source_file
+            FROM chunks c
+            JOIN documents d ON d.id = c.document_id
+            WHERE d.source_file = :source_file
+            ORDER BY c.chunk_index
+            LIMIT :chunk_limit
+            """
+        ),
+        {"source_file": cleaned_source, "chunk_limit": chunk_limit},
+    ).mappings().all()
+
+    contexts = [
+        {
+            "chunk_id": str(row["id"]),
+            "source_file": row["source_file"],
+            "chunk_index": row["chunk_index"],
+            "page_range": row["page_range"],
+            "section_title": row["section_title"],
+            "chunk_text": row["chunk_text"],
+            "score": 1.0,
+        }
+        for row in rows
+    ]
+
+    if not contexts:
+        raise ValueError(f"No chunks found for source_file='{cleaned_source}'")
+
+    citations = _build_citations(contexts)
+    prompt = build_summary_prompt(cleaned_source, contexts)
+
+    if settings.generation_backend.strip().lower() != "ollama":
+        raise RuntimeError(f"Unsupported generation backend: {settings.generation_backend}")
+
+    try:
+        summary_text = generate_answer_with_ollama(
+            base_url=settings.ollama_base_url,
+            model=settings.generation_model,
+            prompt=prompt,
+            timeout_seconds=settings.generation_timeout_seconds,
+        )
+        mode = "llm-summary"
+    except Exception:
+        if settings.generation_strict:
+            raise
+        summary_text = _fallback_summary(contexts)
+        mode = "fallback-summary"
+
+    summary_text = _polish_summary_text(summary_text)
+
+    return {
+        "source_file": cleaned_source,
+        "summary": summary_text,
+        "citations": citations,
+        "used_chunks": len(contexts),
+        "mode": mode,
     }

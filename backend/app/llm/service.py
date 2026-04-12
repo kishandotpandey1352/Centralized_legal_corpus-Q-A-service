@@ -41,6 +41,37 @@ def build_grounded_prompt(question: str, contexts: list[dict[str, Any]]) -> str:
     )
 
 
+def build_summary_prompt(source_file: str, contexts: list[dict[str, Any]]) -> str:
+    context_lines: list[str] = []
+    for index, item in enumerate(contexts, start=1):
+        citation_id = f"C{index}"
+        page_range = item.get("page_range") or "n/a"
+        section_title = item.get("section_title") or "n/a"
+        chunk_text = item.get("chunk_text", "")
+        context_lines.append(
+            "\n".join(
+                [
+                    f"[{citation_id}] page_range={page_range}",
+                    f"[{citation_id}] section_title={section_title}",
+                    f"[{citation_id}] text={chunk_text}",
+                ]
+            )
+        )
+
+    context_block = "\n\n".join(context_lines)
+    return (
+        "You are a legal assistant creating a concise grounded summary.\n"
+        "Rules:\n"
+        "1) Use only the provided context.\n"
+        "2) Write 4-6 bullet points in plain language.\n"
+        "3) Include inline citations like [C1], [C2].\n"
+        "4) If context is insufficient, say exactly: Insufficient evidence in provided documents.\n\n"
+        f"Document: {source_file}\n\n"
+        f"Context:\n{context_block}\n\n"
+        "Return only the summary text."
+    )
+
+
 def generate_answer_with_ollama(
     *,
     base_url: str,

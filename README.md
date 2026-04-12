@@ -142,6 +142,55 @@ curl -X POST http://localhost:8000/query/answer -H "Content-Type: application/js
 del answer_payload.json
 ```
 
+## Day 5 setup (document summary endpoint)
+
+### 1. Generate a grounded summary for one document
+
+```bat
+echo {"source_file":"sample_service_agreement.txt","max_chunks":6} > summary_payload.json
+curl -X POST http://localhost:8000/query/summary -H "Content-Type: application/json" --data-binary @summary_payload.json
+del summary_payload.json
+```
+
+Expected response includes:
+- `source_file`
+- `summary`
+- `citations`
+- `used_chunks`
+- `mode`
+
+## Day 6 status (summary generation hardening)
+
+Implemented:
+1. Summary post-processing that removes incomplete trailing fragments and ensures the text ends with proper punctuation.
+2. Summary-specific formatting cleanup so output is prose-style (no leading `-` bullet prefixes).
+3. Non-null summary citation scores (`score: 1.0`) for source-file grounded summary chunks.
+
+Summary generation logic:
+1. `POST /query/summary` loads chunks by exact `source_file` and `chunk_index` order.
+2. Context chunks are converted to citation objects (`C1`, `C2`, ...).
+3. LLM prompt is built with grounded chunk context and citation IDs.
+4. If LLM call succeeds: mode is `llm-summary`.
+5. If strict mode is disabled and LLM fails: deterministic fallback summary is returned with citations.
+6. Final summary text is polished using summary-specific cleanup before response serialization.
+
+Day 6 problems encountered and fixes:
+1. Problem: summary ended abruptly (for example trailing fragment like `- Con [C1] [C2]`).
+2. Root cause: generic answer cleaner was reused for summaries and did not handle summary-tail fragments well.
+3. Fix: introduced a dedicated summary polishing path that trims incomplete tails, normalizes punctuation, and preserves citations.
+
+4. Problem: summary citation `score` appeared as `null`.
+5. Root cause: summary uses source-file selection (not vector similarity), so score field was left unset.
+6. Fix: set summary citation score to `1.0` to represent exact source-file grounded selection.
+
+7. Problem: summary output returned as hyphen-prefixed list (`- ... - ...`).
+8. Root cause: LLM frequently emitted bullet-style format.
+9. Fix: summary polisher now removes bullet prefixes and returns a clean prose paragraph while keeping citations.
+
+10. Problem: live API sometimes still returned old formatting after code update.
+11. Root cause: running `uvicorn` process had stale code loaded.
+12. Fix: restart backend server after updates (`uvicorn app.main:app --reload --port 8000`).
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
