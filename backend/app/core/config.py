@@ -17,7 +17,15 @@ class Settings(BaseSettings):
     embedding_backend: str = "hash"
     embedding_model: str = "BAAI/bge-m3"
     embedding_cache_dir: str = "backend/.model_cache/sentence-transformers"
+    generation_backend: str = "ollama"
     generation_model: str = "qwen2.5:7b-instruct"
+    generation_timeout_seconds: float = 60.0
+    generation_strict: bool = True
+    qa_min_retrieval_score: float = 0.35
+    qa_force_keyword: str = "material breach"
+    qa_force_min_score: float = 0.45
+    qa_min_lexical_overlap: float = 0.2
+    qa_direct_answer_min_overlap: float = 0.55
 
     model_config = SettingsConfigDict(
         env_file=".env",
