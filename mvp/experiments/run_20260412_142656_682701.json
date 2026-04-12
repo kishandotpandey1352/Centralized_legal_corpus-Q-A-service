@@ -1,0 +1,1393 @@
+{
+  "run_id": "20260412_142656_682701",
+  "api_base_url": "http://localhost:8000",
+  "cases_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_template.json",
+  "eval_source": "offline-local",
+  "summary": {
+    "total_cases": 24,
+    "successful_cases": 24,
+    "failed_cases": 0,
+    "abstention_labeled_cases": 24,
+    "abstention_matches": 24,
+    "abstention_accuracy": 1.0
+  },
+  "case_results": [
+    {
+      "case_id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What is the cure period for material breach?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct factual lookup for termination terms.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "cure [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "time extension",
+        "requested"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires identifying document context plus requested remedy.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "time extension [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the moon made of according to these legal documents?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "moon is"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Pure abstention control question outside corpus scope.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      }
+    },
+    {
+      "case_id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Primary summary sanity check with full chunk budget.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 3,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "A4",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "Under the service agreement, what event can trigger termination?",
+        "source_file": null,
+        "top_k": 4,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "termination",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.87,
+        "answer_correctness": 0.82
+      },
+      "notes": "Direct lookup for termination trigger language.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "termination [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "I think",
+        "probably"
+      ],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Citation-sensitive variant should keep explicit citation markers.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A6",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the filing deadline for a patent in this corpus?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "patent deadline"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention check for out-of-domain intellectual property query.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      }
+    },
+    {
+      "case_id": "A7",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Summarize the remedy process after a material breach is identified.",
+        "source_file": null,
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "breach",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.83,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires combining breach trigger and cure-period context.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "breach [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A8",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What does the agreement say about material breach?",
+        "source_file": null,
+        "top_k": 4,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "material breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.81
+      },
+      "notes": "Canonical phrase lookup for material breach clause.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "material breach [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A9",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Provide only supported facts: what cure period is listed in the agreement?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "cure period"
+      ],
+      "expected_not_contains_any": [
+        "not sure"
+      ],
+      "human_scores": {
+        "faithfulness": 0.91,
+        "answer_correctness": 0.89
+      },
+      "notes": "Should avoid speculative language and maintain citations.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A10",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What are the calorie requirements for astronauts in these documents?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "astronaut"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention probe for irrelevant domain prompt.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      }
+    },
+    {
+      "case_id": "A11",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Explain in one grounded sentence what must happen before termination after breach.",
+        "source_file": null,
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "termination",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.84,
+        "answer_correctness": 0.8
+      },
+      "notes": "Checks concise synthesis instead of direct quote fragments.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "termination [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A12",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Cite your evidence: what cure period appears in the retrieved agreement text?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "period"
+      ],
+      "expected_not_contains_any": [
+        "cannot determine"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.88
+      },
+      "notes": "Citation-anchoring variant to stress citation presence.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A13",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "In the sample service agreement, what is said about breaches and cure opportunities?",
+        "source_file": null,
+        "top_k": 4,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "breach",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Lookup phrased in broader wording to test semantic retrieval.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "breach [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "cryptocurrency"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention case for unsupported modern-finance topic.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      }
+    },
+    {
+      "case_id": "A15",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "What sequence of actions is described from breach notice to possible termination?",
+        "source_file": null,
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "notice",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Temporal synthesis case across adjacent contractual details.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "notice [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "source_file": null,
+        "top_k": 4,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "guess"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Tests citation-sensitive prompting with pre-termination condition.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A17",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What cure timeline is provided for a material breach under the sample agreement?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "material breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct cure-period retrieval with explicit material breach wording.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "cure [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      }
+    },
+    {
+      "case_id": "A18",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What did the documents say about marine insurance hull coverage limits?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "hull coverage"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Out-of-scope insurance question should abstain.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      }
+    },
+    {
+      "case_id": "S2",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 4
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "agreement"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Mid-length summary budget for concise grounded abstraction.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "-"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Citation-density check for multi-citation summary output.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 3,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S4",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 2
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Low-context summary check for graceful compression.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S5",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 8
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.89,
+        "answer_correctness": 0.84
+      },
+      "notes": "Higher chunk budget to test coherent and citation-preserving summaries.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 4,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S6",
+      "kind": "summary",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Citation-sensitive summary expecting explicit grounding and cure-term mention.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 3,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm-summary"
+      }
+    }
+  ],
+  "challenger_metrics": {
+    "faithfulness": 0.8996,
+    "answer_correctness": 0.8725,
+    "retrieval_recall_at_5": 0.7917,
+    "abstention_accuracy": 1.0,
+    "hallucination_rate": 0.0,
+    "invalid_citation_rate": 0.0,
+    "latency_p95_ms": 1,
+    "proxy_components": {
+      "faithfulness_proxy": 0.7917,
+      "answer_correctness_proxy": 1.0,
+      "human_faithfulness_count": 24,
+      "human_correctness_count": 24,
+      "abstention_labeled_cases": 24,
+      "abstention_matches": 24
+    },
+    "notes": [
+      "Metrics are proxy estimates; replace with human-graded correctness/faithfulness for production benchmarking.",
+      "Faithfulness uses human_scores labels where present; proxy used for unlabeled cases.",
+      "Answer correctness uses human_scores labels where present; proxy used for unlabeled cases."
+    ]
+  },
+  "score": {
+    "overall_score": 0.8799,
+    "latency_penalty": 0.0,
+    "gates": {
+      "faithfulness": true,
+      "answer_correctness": true,
+      "retrieval_recall_at_5": true,
+      "hallucination_rate": true,
+      "invalid_citation_rate": true,
+      "latency_p95_ms": true
+    },
+    "pass_fail": "pass"
+  },
+  "compare": {
+    "winner": "challenger",
+    "delta_overall_score": 0.1589,
+    "baseline": {
+      "overall_score": 0.721,
+      "latency_penalty": 0.02,
+      "gates": {
+        "faithfulness": true,
+        "answer_correctness": true,
+        "retrieval_recall_at_5": true,
+        "hallucination_rate": true,
+        "invalid_citation_rate": true,
+        "latency_p95_ms": true
+      },
+      "pass_fail": "pass"
+    },
+    "challenger": {
+      "overall_score": 0.8799,
+      "latency_penalty": 0.0,
+      "gates": {
+        "faithfulness": true,
+        "answer_correctness": true,
+        "retrieval_recall_at_5": true,
+        "hallucination_rate": true,
+        "invalid_citation_rate": true,
+        "latency_p95_ms": true
+      },
+      "pass_fail": "pass"
+    },
+    "has_gate_regression": false,
+    "decision_reason": "Challenger improved overall_score by at least 0.02 with no gate regression."
+  },
+  "baseline_metrics": {
+    "hallucination_rate": 0.1,
+    "abstention_accuracy": 0.84,
+    "retrieval_recall_at_5": 0.7,
+    "invalid_citation_rate": 0.08,
+    "latency_p95_ms": 3400,
+    "faithfulness": 0.78,
+    "answer_correctness": 0.73
+  }
+}

@@ -242,6 +242,30 @@ Day 7 problems encountered and fixes:
 5. Root cause: no deterministic tie-break behavior for near-equal scores.
 6. Fix: implemented explicit tie-break rules using lower latency and lower hallucination.
 
+## Day 8 checklist (evaluation automation and regression gates)
+
+- [ ] Create a golden evaluation set at `mvp/golden_set_template.json` with at least 20 cases.
+- [ ] Cover four case categories: direct lookup, multi-chunk synthesis, abstention/insufficient-evidence, and citation-sensitivity checks.
+- [ ] Label each case with `kind` (`answer` or `summary`) and `should_abstain` where applicable.
+- [ ] Run the new runner script against the live API and save artifacts to `mvp/experiments/`.
+- [ ] Verify each run records: per-case latency, mode, citations, and abstention behavior.
+- [ ] Compute challenger metrics and score via `POST /eval/score`.
+- [ ] Compare challenger against a baseline metric set via `POST /eval/compare`.
+- [ ] Gate regressions: fail the run when compare winner is not `challenger`.
+- [ ] Add one markdown run summary for human review and one JSON artifact for machine use.
+- [ ] Re-run once after any prompt/threshold/config changes and append the new run artifact.
+
+Run Day 8 runner skeleton (from `backend/`):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json
+```
+
+Outputs:
+- JSON run report under `mvp/experiments/run_*.json`
+- Markdown summary under `mvp/experiments/run_*.md`
+- Exit code `1` when regression gate fails (for CI use)
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

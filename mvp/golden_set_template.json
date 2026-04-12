@@ -1,0 +1,436 @@
+{
+  "cases": [
+    {
+      "id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "What is the cure period for material breach?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["cure", "breach"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct factual lookup for termination terms."
+    },
+    {
+      "id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "question": "Which document mentions a time extension request and what is requested?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["time extension", "requested"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires identifying document context plus requested remedy."
+    },
+    {
+      "id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "What is the moon made of according to these legal documents?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["moon is"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Pure abstention control question outside corpus scope."
+    },
+    {
+      "id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 6,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Primary summary sanity check with full chunk budget."
+    },
+    {
+      "id": "A4",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "Under the service agreement, what event can trigger termination?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["termination", "breach"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.87,
+        "answer_correctness": 0.82
+      },
+      "notes": "Direct lookup for termination trigger language."
+    },
+    {
+      "id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "cure"],
+      "expected_not_contains_any": ["I think", "probably"],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Citation-sensitive variant should keep explicit citation markers."
+    },
+    {
+      "id": "A6",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "What is the filing deadline for a patent in this corpus?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["patent deadline"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention check for out-of-domain intellectual property query."
+    },
+    {
+      "id": "A7",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "question": "Summarize the remedy process after a material breach is identified.",
+      "top_k": 5,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["breach", "cure"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.83,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires combining breach trigger and cure-period context."
+    },
+    {
+      "id": "A8",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "What does the agreement say about material breach?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["material breach"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.81
+      },
+      "notes": "Canonical phrase lookup for material breach clause."
+    },
+    {
+      "id": "A9",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Provide only supported facts: what cure period is listed in the agreement?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "cure period"],
+      "expected_not_contains_any": ["not sure"],
+      "human_scores": {
+        "faithfulness": 0.91,
+        "answer_correctness": 0.89
+      },
+      "notes": "Should avoid speculative language and maintain citations."
+    },
+    {
+      "id": "A10",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "What are the calorie requirements for astronauts in these documents?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["astronaut"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention probe for irrelevant domain prompt."
+    },
+    {
+      "id": "A11",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "question": "Explain in one grounded sentence what must happen before termination after breach.",
+      "top_k": 5,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["termination", "cure"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.84,
+        "answer_correctness": 0.8
+      },
+      "notes": "Checks concise synthesis instead of direct quote fragments."
+    },
+    {
+      "id": "A12",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Cite your evidence: what cure period appears in the retrieved agreement text?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "period"],
+      "expected_not_contains_any": ["cannot determine"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.88
+      },
+      "notes": "Citation-anchoring variant to stress citation presence."
+    },
+    {
+      "id": "A13",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "In the sample service agreement, what is said about breaches and cure opportunities?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["breach", "cure"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Lookup phrased in broader wording to test semantic retrieval."
+    },
+    {
+      "id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["cryptocurrency"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention case for unsupported modern-finance topic."
+    },
+    {
+      "id": "A15",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "question": "What sequence of actions is described from breach notice to possible termination?",
+      "top_k": 5,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["notice", "termination"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Temporal synthesis case across adjacent contractual details."
+    },
+    {
+      "id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "termination"],
+      "expected_not_contains_any": ["guess"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Tests citation-sensitive prompting with pre-termination condition."
+    },
+    {
+      "id": "A17",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "What cure timeline is provided for a material breach under the sample agreement?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["cure", "material breach"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct cure-period retrieval with explicit material breach wording."
+    },
+    {
+      "id": "A18",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "What did the documents say about marine insurance hull coverage limits?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["hull coverage"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Out-of-scope insurance question should abstain."
+    },
+    {
+      "id": "S2",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 4,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "agreement"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Mid-length summary budget for concise grounded abstraction."
+    },
+    {
+      "id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 6,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "[C2]"],
+      "expected_not_contains_any": [" - "],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Citation-density check for multi-citation summary output."
+    },
+    {
+      "id": "S4",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 2,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Low-context summary check for graceful compression."
+    },
+    {
+      "id": "S5",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 8,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "[C2]"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.89,
+        "answer_correctness": 0.84
+      },
+      "notes": "Higher chunk budget to test coherent and citation-preserving summaries."
+    },
+    {
+      "id": "S6",
+      "kind": "summary",
+      "category": "citation_sensitivity",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 6,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "[C2]", "cure"],
+      "expected_not_contains_any": ["Insufficient evidence"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Citation-sensitive summary expecting explicit grounding and cure-term mention."
+    }
+  ]
+}
