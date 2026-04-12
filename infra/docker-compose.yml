@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: legal_rag_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: legal_rag
+      POSTGRES_USER: legal_rag
+      POSTGRES_PASSWORD: legal_rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+volumes:
+  pgdata:

@@ -1,0 +1,29 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "Legal RAG API"
+    app_env: str = "dev"
+    api_port: int = 8000
+
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "legal_rag"
+    postgres_user: str = "legal_rag"
+    postgres_password: str = "legal_rag"
+    database_url: str = "postgresql+psycopg://legal_rag:legal_rag@localhost:5432/legal_rag"
+
+    ollama_base_url: str = "http://localhost:11434"
+    embedding_backend: str = "hash"
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_cache_dir: str = "backend/.model_cache/sentence-transformers"
+    generation_model: str = "qwen2.5:7b-instruct"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+
+settings = Settings()
