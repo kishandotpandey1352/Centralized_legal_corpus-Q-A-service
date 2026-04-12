@@ -191,6 +191,57 @@ Day 6 problems encountered and fixes:
 11. Root cause: running `uvicorn` process had stale code loaded.
 12. Fix: restart backend server after updates (`uvicorn app.main:app --reload --port 8000`).
 
+## Day 7 status (evaluation and experiment scoring)
+
+Implemented:
+1. Evaluation scoring endpoint `POST /eval/score` using rubric metrics from `mvp/scoring_rubric.md`.
+2. Experiment comparison endpoint `POST /eval/compare` using improvement and gate-regression rules.
+3. Pass/fail gate checks and latency penalty logic included in API response.
+
+Day 7 evaluation logic:
+1. Input metrics: `faithfulness`, `answer_correctness`, `retrieval_recall_at_5`, `abstention_accuracy`, `hallucination_rate`, `invalid_citation_rate`, `latency_p95_ms`.
+2. `overall_score` formula:
+    - `0.40*faithfulness + 0.30*answer_correctness + 0.20*retrieval_recall_at_5 + 0.10*abstention_accuracy - 0.10*hallucination_rate - 0.05*invalid_citation_rate - latency_penalty`
+3. Latency penalty:
+    - `0.00` if `latency_p95_ms <= 3000`
+    - `0.02` if `3000 < latency_p95_ms <= 5000`
+    - `0.05` if `latency_p95_ms > 5000`
+4. Pass/fail gates:
+    - `faithfulness >= 0.75`
+    - `answer_correctness >= 0.70`
+    - `retrieval_recall_at_5 >= 0.65`
+    - `hallucination_rate <= 0.12`
+    - `invalid_citation_rate <= 0.10`
+    - `latency_p95_ms <= 5000`
+5. Compare decision rule:
+    - Challenger wins if `overall_score` improves by at least `0.02` and no pass gate regresses from pass to fail.
+    - If score delta is within `0.02`, lower latency and lower hallucination are used as tie-breakers.
+
+Run Day 7 scoring (from `backend/`):
+
+```bat
+echo {"faithfulness":0.79,"answer_correctness":0.75,"retrieval_recall_at_5":0.72,"abstention_accuracy":0.86,"hallucination_rate":0.09,"invalid_citation_rate":0.07,"latency_p95_ms":3200} > eval_score_payload.json
+curl -X POST http://localhost:8000/eval/score -H "Content-Type: application/json" --data-binary @eval_score_payload.json
+del eval_score_payload.json
+```
+
+Run Day 7 experiment comparison (from `backend/`):
+
+```bat
+echo {"baseline":{"faithfulness":0.78,"answer_correctness":0.73,"retrieval_recall_at_5":0.70,"abstention_accuracy":0.84,"hallucination_rate":0.10,"invalid_citation_rate":0.08,"latency_p95_ms":3400},"challenger":{"faithfulness":0.81,"answer_correctness":0.76,"retrieval_recall_at_5":0.73,"abstention_accuracy":0.86,"hallucination_rate":0.08,"invalid_citation_rate":0.06,"latency_p95_ms":3200}} > eval_compare_payload.json
+curl -X POST http://localhost:8000/eval/compare -H "Content-Type: application/json" --data-binary @eval_compare_payload.json
+del eval_compare_payload.json
+```
+
+Day 7 problems encountered and fixes:
+1. Problem: score interpretations differed between runs.
+2. Root cause: formula and pass/fail gates were applied manually and inconsistently.
+3. Fix: centralized formula, latency penalty, and gates into one reusable evaluation module and API endpoints.
+
+4. Problem: comparison decisions were ambiguous for close runs.
+5. Root cause: no deterministic tie-break behavior for near-equal scores.
+6. Fix: implemented explicit tie-break rules using lower latency and lower hallucination.
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
