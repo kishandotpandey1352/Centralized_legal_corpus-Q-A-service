@@ -233,6 +233,18 @@ del answer_payload.json
 
 ## Response troubleshooting log (issues encountered + fixes applied)
 
+### Quick tuning checklist
+
+| Symptom | Env key to tune | Recommended value range | Effect |
+|---|---|---|---|
+| Too many `Insufficient evidence` responses | `QA_MIN_RETRIEVAL_SCORE` | `0.25` to `0.40` | Lower value makes answering easier; higher value is stricter. |
+| Good vector hits but still low confidence | `QA_MIN_LEXICAL_OVERLAP` | `0.10` to `0.30` | Lower value tolerates weaker keyword overlap. |
+| Direct evidence answers rarely trigger | `QA_DIRECT_ANSWER_MIN_OVERLAP` | `0.30` to `0.60` | Lower value triggers direct cited answers more often. |
+| Forced keyword answer not triggering | `QA_FORCE_MIN_SCORE` | `0.35` to `0.55` | Lower value allows keyword force mode at lower confidence. |
+| Need different forced trigger phrase | `QA_FORCE_KEYWORD` | Any domain phrase | Example: `material breach`, `time extension request`. |
+| LLM errors should not block response | `GENERATION_STRICT` | `false` or `true` | `false` enables fallback response path; `true` fails fast on LLM errors. |
+| LLM timing out on long context | `GENERATION_TIMEOUT_SECONDS` | `30` to `120` | Higher value allows slower model responses. |
+
 ### A. `curl` JSON parse errors in cmd
 - Symptom: `json_invalid`, `Could not resolve host`, unmatched braces.
 - Root cause: inline JSON quoting in Windows cmd breaks easily.
