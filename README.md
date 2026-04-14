@@ -452,6 +452,41 @@ Nightly promotion-policy validation (non-destructive):
 python scripts\promote_baseline.py --run-json ..\mvp\experiments\nightly_full\run_YYYYMMDD_HHMMSS_xxxxxx.json --check-only
 ```
 
+## Day 12 status (baseline promotion workflow)
+
+Implemented:
+1. Strict promotion criteria in `backend/scripts/promote_baseline.py`:
+    - Candidate run must pass normal promotion policy (`winner=challenger`, `has_gate_regression=false`, `pass_fail=pass`).
+    - Require consecutive live runs (`eval_source=api`) with no gate regression.
+    - Selected run must be the latest run artifact in the checked run directory.
+2. CI automation updated in `.github/workflows/eval-gates.yml`:
+    - Nightly full-suite policy check now enforces `--require-consecutive-live-runs 2` on `mvp/experiments/nightly_full`.
+
+Day 12 strict promotion criteria (default strict mode):
+1. Run-level policy pass for candidate run.
+2. Consecutive live runs requirement is met.
+3. Every run in required streak has:
+    - `eval_source=api`
+    - `compare.winner=challenger`
+    - `compare.has_gate_regression=false`
+    - `score.pass_fail=pass`
+
+Validate policy without updating baseline (recommended first):
+
+```bat
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\nightly_full\run_YYYYMMDD_HHMMSS_xxxxxx.json --runs-dir ..\mvp\experiments\nightly_full --require-consecutive-live-runs 2 --check-only
+```
+
+Promote baseline only after policy check passes:
+
+```bat
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\nightly_full\run_YYYYMMDD_HHMMSS_xxxxxx.json --runs-dir ..\mvp\experiments\nightly_full --require-consecutive-live-runs 2
+```
+
+Optional override flags:
+1. `--allow-offline` to allow offline run source (not recommended for strict live policy).
+2. `--force` to bypass checks (emergency use only).
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

@@ -137,6 +137,8 @@ jobs:
         run: >-
           python scripts/promote_baseline.py
           --run-json "${{ steps.latest_run.outputs.run_json }}"
+          --runs-dir ../mvp/experiments/nightly_full
+          --require-consecutive-live-runs 2
           --check-only
 
       - name: Upload evaluation artifacts
