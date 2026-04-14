@@ -35,3 +35,5 @@ def test_build_summary_prompt_includes_document_and_citations() -> None:
     assert "Document: sample_service_agreement.txt" in prompt
     assert "[C1] section_title=Term and Termination" in prompt
     assert "[C1] text=Either party may terminate" in prompt
+    assert "Write 3-5 short numbered points" in prompt
+    assert "Keep total output under 170 words." in prompt

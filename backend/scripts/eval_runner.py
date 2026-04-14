@@ -326,6 +326,25 @@ def _contains_forbidden_terms(text_value: str, forbidden_terms: tuple[str, ...])
     return any(term.lower() in lowered for term in forbidden_terms)
 
 
+def _summary_sentence_count(text_value: str) -> int:
+    parts = [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", text_value.strip()) if segment.strip()]
+    if parts:
+        return len(parts)
+
+    numbered_parts = [segment.strip() for segment in text_value.splitlines() if re.match(r"^\d+\.\s+", segment.strip())]
+    return len(numbered_parts)
+
+
+def _summary_word_count(text_value: str) -> int:
+    return len(re.findall(r"\b\w+\b", text_value))
+
+
+def _summary_structure_ok(text_value: str) -> bool:
+    lines = [line.strip() for line in text_value.splitlines() if line.strip()]
+    numbered_lines = [line for line in lines if re.match(r"^\d+\.\s+", line)]
+    return len(numbered_lines) >= 2
+
+
 def _build_timeout(
     *,
     total_seconds: float,
@@ -586,6 +605,27 @@ def _run_case(
         forbidden_ok = True if contains_forbidden is None else not contains_forbidden
         content_expectation_passed = expected_ok and forbidden_ok
 
+    summary_quality: dict[str, Any] | None = None
+    if case.kind == "summary":
+        requested_source = (case.source_file or "").strip().lower()
+        citation_sources = {
+            str(item.get("source_file", "")).strip().lower()
+            for item in citation_dicts
+            if isinstance(item, dict)
+        }
+        source_alignment = bool(citation_sources) and citation_sources == {requested_source}
+        sentence_count = _summary_sentence_count(content_text)
+        word_count = _summary_word_count(content_text)
+        verbosity_ok = sentence_count <= 6 and word_count <= 170
+        structure_ok = _summary_structure_ok(content_text)
+        summary_quality = {
+            "summary_source_alignment": source_alignment,
+            "summary_verbosity_ok": verbosity_ok,
+            "summary_structure_ok": structure_ok,
+            "summary_sentence_count": sentence_count,
+            "summary_word_count": word_count,
+        }
+
     record.update(
         {
             "ok": True,
@@ -606,6 +646,7 @@ def _run_case(
                 "contains_expected_terms": contains_expected,
                 "contains_forbidden_terms": contains_forbidden,
                 "content_expectation_passed": content_expectation_passed,
+                **(summary_quality or {}),
             },
             "citation_validation": {
                 "inline_ids": citation_quality["inline_ids"],
@@ -614,6 +655,7 @@ def _run_case(
                 "missing_inline_citations": citation_quality["missing_inline_citations"],
                 "citation_sequence_valid": citation_quality["sequence_valid"],
             },
+            **({"summary_quality": summary_quality} if summary_quality is not None else {}),
             "response": body,
         }
     )
@@ -660,6 +702,18 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
         forbidden_ok = True if contains_forbidden is None else not contains_forbidden
         content_expectation_passed = expected_ok and forbidden_ok
 
+    summary_quality: dict[str, Any] | None = None
+    if case.kind == "summary":
+        sentence_count = _summary_sentence_count(content_text)
+        word_count = _summary_word_count(content_text)
+        summary_quality = {
+            "summary_source_alignment": True,
+            "summary_verbosity_ok": sentence_count <= 6 and word_count <= 170,
+            "summary_structure_ok": _summary_structure_ok(content_text),
+            "summary_sentence_count": sentence_count,
+            "summary_word_count": word_count,
+        }
+
     return {
         "case_id": case.case_id,
         "kind": case.kind,
@@ -701,6 +755,7 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
             "contains_expected_terms": contains_expected,
             "contains_forbidden_terms": contains_forbidden,
             "content_expectation_passed": content_expectation_passed,
+            **(summary_quality or {}),
         },
         "citation_validation": {
             "inline_ids": sorted(_extract_inline_citation_ids(content_text)),
@@ -709,6 +764,7 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
             "missing_inline_citations": False,
             "citation_sequence_valid": True,
         },
+        **({"summary_quality": summary_quality} if summary_quality is not None else {}),
         "response": response_payload,
     }
 

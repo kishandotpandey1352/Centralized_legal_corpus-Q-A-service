@@ -595,6 +595,35 @@ Run full citation-sensitive evaluation against baseline:
 python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
 ```
 
+## Day 16 status (summary quality upgrade)
+
+Implemented:
+1. Summary structure and verbosity controls in `backend/app/llm/service.py`:
+    - Prompt now requests 3-5 short numbered points.
+    - Prompt enforces groundedness and a 170-word cap.
+2. Runtime summary quality repair in `backend/app/retrieval/service.py`:
+    - Structured summary fallback (`1. ... [C1]`) generated from grounded context chunks.
+    - Drift/verbosity detector repairs uncertain or overly long summaries.
+    - Summary output now targets at least two inline citations when available.
+3. Eval groundedness and quality diagnostics in `backend/scripts/eval_runner.py`:
+    - `summary_source_alignment`
+    - `summary_verbosity_ok`
+    - `summary_structure_ok`
+    - `summary_sentence_count`
+    - `summary_word_count`
+
+Run Day 16 targeted tests:
+
+```bat
+python -m pytest tests\test_qa_fallback.py tests\test_llm_prompt.py tests\test_query_summary_integration.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
+```
+
+Run Day 16 smoke eval and inspect summary diagnostics:
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

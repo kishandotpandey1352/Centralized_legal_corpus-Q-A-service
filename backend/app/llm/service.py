@@ -60,12 +60,14 @@ def build_summary_prompt(source_file: str, contexts: list[dict[str, Any]]) -> st
 
     context_block = "\n\n".join(context_lines)
     return (
-        "You are a legal assistant creating a concise grounded summary.\n"
+        "You are a legal assistant creating a concise grounded legal summary.\n"
         "Rules:\n"
         "1) Use only the provided context.\n"
-        "2) Write 4-6 bullet points in plain language.\n"
-        "3) Include inline citations like [C1], [C2].\n"
+        "2) Write 3-5 short numbered points (not bullets) in plain language.\n"
+        "3) Each point must end with one or more inline citations like [C1], [C2].\n"
         "4) If context is insufficient, say exactly: Insufficient evidence in provided documents.\n\n"
+        "5) Do not add legal conclusions beyond the provided context.\n"
+        "6) Keep total output under 170 words.\n\n"
         f"Document: {source_file}\n\n"
         f"Context:\n{context_block}\n\n"
         "Return only the summary text."

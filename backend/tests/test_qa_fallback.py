@@ -9,6 +9,8 @@ from app.retrieval.service import (
     _polish_answer_text,
     _polish_summary_text,
     _question_terms,
+    _structured_summary_from_contexts,
+    _summary_needs_repair,
     _should_force_cited_answer,
     _top_score,
 )
@@ -152,3 +154,27 @@ def test_enforce_citation_integrity_adds_marker_to_abstention_text() -> None:
     citations = [{"id": "C1"}]
     enriched = _enforce_citation_integrity("Insufficient evidence in provided documents.", citations, min_required=1)
     assert enriched == "Insufficient evidence in provided documents. [C1]"
+
+
+def test_structured_summary_from_contexts_returns_numbered_lines() -> None:
+    summary = _structured_summary_from_contexts(
+        [
+            {"chunk_text": "The agreement term is twelve months from January 1, 2026."},
+            {"chunk_text": "Material breach requires a thirty day cure period before termination."},
+        ],
+        max_points=3,
+    )
+    assert "1." in summary
+    assert "2." in summary
+    assert "[C1]" in summary
+    assert "[C2]" in summary
+
+
+def test_summary_needs_repair_for_verbose_or_uncertain_text() -> None:
+    verbose = " ".join(["This is a long summary sentence with uncertain language maybe."] * 20)
+    assert _summary_needs_repair(verbose, min_inline_citations=2) is True
+
+
+def test_summary_needs_repair_false_for_compact_cited_summary() -> None:
+    text = "1. Term is twelve months. [C1] 2. Cure period is thirty days. [C2]"
+    assert _summary_needs_repair(text, min_inline_citations=2) is False

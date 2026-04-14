@@ -385,6 +385,65 @@ def _polish_summary_text(summary_text: str) -> str:
     return f"{core} {' '.join(ordered_unique)}".strip()
 
 
+def _extract_fact_sentence(chunk_text: str) -> str:
+    cleaned = _clean_sentence(chunk_text)
+    if cleaned == "Insufficient evidence in provided documents.":
+        return ""
+    return cleaned
+
+
+def _structured_summary_from_contexts(contexts: list[dict[str, Any]], max_points: int = 4) -> str:
+    lines: list[str] = []
+    for index, item in enumerate(contexts[:max_points], start=1):
+        sentence = _extract_fact_sentence(str(item.get("chunk_text", "")).strip())
+        if not sentence:
+            continue
+        lines.append(f"{index}. {sentence} [C{index}]")
+
+    if not lines:
+        return "Insufficient evidence in provided documents."
+    return "\n".join(lines)
+
+
+def _summary_word_count(text_value: str) -> int:
+    return len(re.findall(r"\b\w+\b", text_value))
+
+
+def _summary_sentences(text_value: str) -> list[str]:
+    return [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", text_value) if segment.strip()]
+
+
+def _summary_needs_repair(summary_text: str, min_inline_citations: int) -> bool:
+    stripped = summary_text.strip()
+    if not stripped:
+        return True
+
+    lowered = stripped.lower()
+    drift_markers = (
+        "i think",
+        "maybe",
+        "likely",
+        "might",
+        "could be",
+        "possibly",
+        "outside the provided context",
+    )
+    if any(marker in lowered for marker in drift_markers):
+        return True
+
+    sentence_count = len(_summary_sentences(stripped))
+    word_count = _summary_word_count(stripped)
+    inline_count = len(re.findall(r"\[C\d+\]", stripped))
+
+    if sentence_count > 6:
+        return True
+    if word_count > 170:
+        return True
+    if inline_count < min_inline_citations:
+        return True
+    return False
+
+
 def _extract_inline_citation_ids(text_value: str) -> list[str]:
     return re.findall(r"C\d+", text_value or "")
 
@@ -631,21 +690,7 @@ def answer_question(
 
 
 def _fallback_summary(contexts: list[dict[str, Any]]) -> str:
-    if not contexts:
-        return "Insufficient evidence in provided documents."
-
-    bullets: list[str] = []
-    for index, item in enumerate(contexts[:4], start=1):
-        chunk_text = str(item.get("chunk_text", "")).strip()
-        if not chunk_text:
-            continue
-        cleaned = _clean_sentence(chunk_text)
-        if cleaned and cleaned != "Insufficient evidence in provided documents.":
-            bullets.append(f"- {cleaned} [C{index}]")
-
-    if not bullets:
-        return "Insufficient evidence in provided documents."
-    return "\n".join(bullets)
+    return _structured_summary_from_contexts(contexts, max_points=4)
 
 
 def summarize_document(db: Session, source_file: str, max_chunks: int | None = None) -> dict[str, Any]:
@@ -712,11 +757,23 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
         summary_text = _fallback_summary(contexts)
         mode = "fallback-summary"
 
-    summary_text = _enforce_citation_integrity(_polish_summary_text(summary_text), citations, min_required=1)
+    min_summary_inline = 2 if len(citations) >= 2 else 1
+    polished_summary = _enforce_citation_integrity(
+        _polish_summary_text(summary_text),
+        citations,
+        min_required=min_summary_inline,
+    )
+
+    if _summary_needs_repair(polished_summary, min_summary_inline):
+        polished_summary = _enforce_citation_integrity(
+            _structured_summary_from_contexts(contexts, max_points=4),
+            citations,
+            min_required=min_summary_inline,
+        )
 
     return {
         "source_file": cleaned_source,
-        "summary": summary_text,
+        "summary": polished_summary,
         "citations": citations,
         "used_chunks": len(contexts),
         "mode": mode,
