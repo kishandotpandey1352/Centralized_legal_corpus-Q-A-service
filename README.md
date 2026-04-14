@@ -412,6 +412,46 @@ Run repeated Day 10 stability series (from `backend/`):
 python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --runs 5 --answer-timeout-seconds 20 --summary-timeout-seconds 45 --answer-max-retries 2 --summary-max-retries 1 --connect-timeout-seconds 5 --read-timeout-seconds 45 --write-timeout-seconds 10 --pool-timeout-seconds 10 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 4 --stop-on-failure --require-winner-rate 0.60 --require-passing-rate 1.00
 ```
 
+## Day 11 status (smoke vs full evaluation suites)
+
+Implemented:
+1. Fast PR smoke suite in `.github/workflows/eval-gates.yml`:
+    - Trigger: `pull_request` (main/develop, scoped paths)
+    - Runs smoke-only repeated checks
+    - Stores artifacts under `mvp/experiments/pr_smoke`
+2. Full nightly suite in `.github/workflows/eval-gates.yml`:
+    - Trigger: nightly `schedule` (`0 2 * * *`)
+    - Runs full repeated checks
+    - Enforces promotion policy in non-destructive mode (`--check-only`)
+    - Stores artifacts under `mvp/experiments/nightly_full`
+3. Manual dispatch now supports suite selection:
+    - `suite=smoke` | `suite=full` | `suite=both`
+
+Why this split helps:
+1. PR feedback remains fast and practical (smoke coverage).
+2. Nightly run keeps deep coverage without slowing developer iteration.
+3. Promotion-policy checks stay tied to full-suite evidence.
+
+How to run equivalent local checks:
+
+Fast smoke (PR-like):
+
+```bat
+python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --output-dir ..\mvp\experiments\pr_smoke --runs 2 --answer-timeout-seconds 20 --summary-timeout-seconds 40 --max-retries 1 --stop-on-failure --require-winner-rate 0.60 --require-passing-rate 1.00
+```
+
+Full nightly-like:
+
+```bat
+python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --output-dir ..\mvp\experiments\nightly_full --runs 2 --answer-timeout-seconds 25 --summary-timeout-seconds 90 --max-retries 2 --stop-on-failure --require-winner-rate 0.70 --require-passing-rate 1.00
+```
+
+Nightly promotion-policy validation (non-destructive):
+
+```bat
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\nightly_full\run_YYYYMMDD_HHMMSS_xxxxxx.json --check-only
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

@@ -1,8 +1,28 @@
 name: Eval Gates
 
 on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - backend/**
+      - mvp/**
+      - .github/workflows/eval-gates.yml
+      - README.md
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
+      suite:
+        description: "Suite to run"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - smoke
+          - full
+          - both
       api_base_url:
         description: "FastAPI base URL (must be reachable by runner)"
         required: true
@@ -17,8 +37,12 @@ on:
         default: "2"
 
 jobs:
-  eval-gates:
+  smoke-pr:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.suite == 'smoke' || github.event.inputs.suite == 'both')) }}
     runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.EVAL_API_BASE_URL || 'http://localhost:8000' }}
+      SMOKE_RUNS: ${{ github.event.inputs.smoke_runs || '2' }}
     defaults:
       run:
         working-directory: backend
@@ -37,10 +61,11 @@ jobs:
       - name: Repeated smoke runs (variance gate)
         run: >-
           python scripts/eval_series.py
-          --api-base-url "${{ github.event.inputs.api_base_url }}"
+          --api-base-url "${{ env.API_BASE_URL }}"
           --cases ../mvp/golden_set_smoke.json
           --baseline ../mvp/experiments/baseline_metrics.json
-          --runs "${{ github.event.inputs.smoke_runs }}"
+          --output-dir ../mvp/experiments/pr_smoke
+          --runs "${{ env.SMOKE_RUNS }}"
           --answer-timeout-seconds 20
           --summary-timeout-seconds 40
           --max-retries 1
@@ -48,13 +73,44 @@ jobs:
           --require-winner-rate 0.60
           --require-passing-rate 1.00
 
-      - name: Repeated full runs (variance gate)
+      - name: Upload PR smoke artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-artifacts-pr-smoke
+          path: |
+            mvp/experiments/pr_smoke/run_*.json
+            mvp/experiments/pr_smoke/run_*.md
+            mvp/experiments/pr_smoke/series_latest.json
+
+  full-nightly:
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.suite == 'full' || github.event.inputs.suite == 'both')) }}
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.EVAL_API_BASE_URL || 'http://localhost:8000' }}
+      FULL_RUNS: ${{ github.event.inputs.full_runs || '2' }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Repeated full runs (nightly gate)
         run: >-
           python scripts/eval_series.py
-          --api-base-url "${{ github.event.inputs.api_base_url }}"
+          --api-base-url "${{ env.API_BASE_URL }}"
           --cases ../mvp/golden_set_template.json
           --baseline ../mvp/experiments/baseline_metrics.json
-          --runs "${{ github.event.inputs.full_runs }}"
+          --output-dir ../mvp/experiments/nightly_full
+          --runs "${{ env.FULL_RUNS }}"
           --answer-timeout-seconds 25
           --summary-timeout-seconds 90
           --max-retries 2
@@ -67,7 +123,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          root = Path("../mvp/experiments")
+          root = Path("../mvp/experiments/nightly_full")
           runs = sorted(root.glob("run_*.json"), key=lambda p: p.stat().st_mtime)
           if not runs:
               raise SystemExit("No run artifacts found")
@@ -86,8 +142,8 @@ jobs:
       - name: Upload evaluation artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eval-artifacts
+          name: eval-artifacts-nightly-full
           path: |
-            mvp/experiments/run_*.json
-            mvp/experiments/run_*.md
-            mvp/experiments/series_latest.json
+            mvp/experiments/nightly_full/run_*.json
+            mvp/experiments/nightly_full/run_*.md
+            mvp/experiments/nightly_full/series_latest.json
