@@ -487,6 +487,48 @@ Optional override flags:
 1. `--allow-offline` to allow offline run source (not recommended for strict live policy).
 2. `--force` to bypass checks (emergency use only).
 
+## Day 13 status (reviewer score sync automation)
+
+Implemented:
+1. Safe sync script `backend/scripts/sync_reviewer_scores.py` to import reviewer worksheet scores into golden set.
+2. Validation safeguards:
+    - case ID matching against golden set
+    - duplicate worksheet case ID detection
+    - numeric score validation in range `[0.0, 1.0]`
+    - optional strict mode for unknown IDs and metadata mismatches
+3. Safety controls:
+    - default dry-run mode (no writes)
+    - explicit `--apply` required for file updates
+    - automatic backup when updating in place
+
+Worksheet source:
+- `mvp/human_scores_reviewer_worksheet.csv`
+
+Golden set target:
+- `mvp/golden_set_template.json`
+
+Run Day 13 sync dry-run (recommended first):
+
+```bat
+python scripts\sync_reviewer_scores.py --worksheet ..\mvp\human_scores_reviewer_worksheet.csv --golden-set ..\mvp\golden_set_template.json
+```
+
+Apply Day 13 sync in place (with automatic backup):
+
+```bat
+python scripts\sync_reviewer_scores.py --worksheet ..\mvp\human_scores_reviewer_worksheet.csv --golden-set ..\mvp\golden_set_template.json --apply
+```
+
+Strict policy sync (fail on unknown IDs/metadata mismatch):
+
+```bat
+python scripts\sync_reviewer_scores.py --worksheet ..\mvp\human_scores_reviewer_worksheet.csv --golden-set ..\mvp\golden_set_template.json --strict --apply
+```
+
+Optional flags:
+1. `--allow-partial` to allow updating only one reviewer score field in a row.
+2. `--output <path>` to write to a separate JSON file instead of in-place update.
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
