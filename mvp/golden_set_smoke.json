@@ -76,10 +76,11 @@
       "top_k": 3,
       "should_abstain": false,
       "expected_mode": "evidence-direct",
-      "min_citations": 1,
+      "min_citations": 2,
       "require_valid_citations": true,
       "expected_contains_any": [
         "[C1]",
+        "[C2]",
         "cure"
       ],
       "expected_not_contains_any": [
@@ -167,10 +168,11 @@
       "top_k": 4,
       "should_abstain": false,
       "expected_mode": "evidence-direct",
-      "min_citations": 1,
+      "min_citations": 2,
       "require_valid_citations": true,
       "expected_contains_any": [
         "[C1]",
+        "[C2]",
         "termination"
       ],
       "expected_not_contains_any": [

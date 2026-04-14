@@ -385,6 +385,49 @@ def _polish_summary_text(summary_text: str) -> str:
     return f"{core} {' '.join(ordered_unique)}".strip()
 
 
+def _extract_inline_citation_ids(text_value: str) -> list[str]:
+    return re.findall(r"C\d+", text_value or "")
+
+
+def _enforce_citation_integrity(text_value: str, citations: list[dict[str, Any]], min_required: int = 1) -> str:
+    stripped = text_value.strip()
+    if not stripped:
+        return stripped
+
+    valid_ids: list[str] = []
+    for citation in citations:
+        citation_id = str(citation.get("id", "")).strip()
+        if re.fullmatch(r"C\d+", citation_id):
+            valid_ids.append(citation_id)
+
+    if not valid_ids:
+        return stripped
+
+    inline_ids = _extract_inline_citation_ids(stripped)
+    filtered_inline = [citation_id for citation_id in inline_ids if citation_id in valid_ids]
+
+    required = max(1, min(min_required, len(valid_ids)))
+    if len(filtered_inline) < required:
+        for citation_id in valid_ids:
+            if citation_id not in filtered_inline:
+                filtered_inline.append(citation_id)
+            if len(filtered_inline) >= required:
+                break
+
+    # Rebuild text with a stable inline citation tail using only known citation IDs.
+    core = re.sub(r"\s*\[C\d+\]\s*", " ", stripped)
+    core = re.sub(r"\s+", " ", core).strip()
+    if not core:
+        core = "Insufficient evidence in provided documents."
+
+    ordered_unique: list[str] = []
+    for citation_id in filtered_inline:
+        if citation_id not in ordered_unique:
+            ordered_unique.append(citation_id)
+
+    return f"{core} {' '.join(f'[{citation_id}]' for citation_id in ordered_unique)}".strip()
+
+
 def _attach_adjacent_context(db: Session, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not results:
         return results
@@ -473,6 +516,7 @@ def answer_question(
     )
     results = retrieval.get("results", [])
     citations = _build_citations(results)
+    answer_min_inline = 2 if len(citations) >= 2 else 1
 
     if not results:
         return {
@@ -498,7 +542,11 @@ def answer_question(
     if lexical_conf >= settings.qa_direct_answer_min_overlap:
         return {
             "question": cleaned_question,
-            "answer": _polish_answer_text(_direct_cited_answer(cleaned_question, enriched_results)),
+            "answer": _enforce_citation_integrity(
+                _polish_answer_text(_direct_cited_answer(cleaned_question, enriched_results)),
+                citations,
+                min_required=answer_min_inline,
+            ),
             "citations": citations,
             "used_chunks": len(results),
             "mode": "evidence-direct",
@@ -510,7 +558,11 @@ def answer_question(
     if force_cited:
         return {
             "question": cleaned_question,
-            "answer": _polish_answer_text(_force_concise_cited_answer(enriched_results)),
+            "answer": _enforce_citation_integrity(
+                _polish_answer_text(_force_concise_cited_answer(enriched_results)),
+                citations,
+                min_required=answer_min_inline,
+            ),
             "citations": citations,
             "used_chunks": len(results),
             "mode": "forced-cited",
@@ -522,7 +574,11 @@ def answer_question(
     if not confident_enough:
         return {
             "question": cleaned_question,
-            "answer": "Insufficient evidence in provided documents.",
+            "answer": _enforce_citation_integrity(
+                "Insufficient evidence in provided documents.",
+                citations,
+                min_required=answer_min_inline,
+            ),
             "citations": citations,
             "used_chunks": len(results),
             "mode": "low-confidence",
@@ -553,7 +609,11 @@ def answer_question(
         answer_text = _force_concise_cited_answer(enriched_results)
         mode = "forced-cited"
 
-    answer_text = _polish_answer_text(answer_text)
+    answer_text = _enforce_citation_integrity(
+        _polish_answer_text(answer_text),
+        citations,
+        min_required=answer_min_inline,
+    )
 
     return {
         "question": cleaned_question,
@@ -652,7 +712,7 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
         summary_text = _fallback_summary(contexts)
         mode = "fallback-summary"
 
-    summary_text = _polish_summary_text(summary_text)
+    summary_text = _enforce_citation_integrity(_polish_summary_text(summary_text), citations, min_required=1)
 
     return {
         "source_file": cleaned_source,

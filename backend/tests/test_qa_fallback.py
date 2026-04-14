@@ -2,6 +2,7 @@ from app.retrieval.service import (
     _clean_sentence,
     _contains_force_keyword,
     _direct_cited_answer,
+    _enforce_citation_integrity,
     _fallback_answer,
     _force_concise_cited_answer,
     _lexical_confidence,
@@ -128,3 +129,26 @@ def test_polish_summary_text_removes_bullet_prefixes() -> None:
     assert "- " not in polished
     assert polished.startswith("Scope of Services")
     assert polished.endswith("[C1] [C2]")
+
+
+def test_enforce_citation_integrity_appends_required_inline_markers() -> None:
+    citations = [
+        {"id": "C1"},
+        {"id": "C2"},
+        {"id": "C3"},
+    ]
+    enriched = _enforce_citation_integrity("Grounded answer text.", citations, min_required=2)
+    assert enriched.endswith("[C1] [C2]")
+
+
+def test_enforce_citation_integrity_filters_unknown_markers() -> None:
+    citations = [{"id": "C1"}, {"id": "C2"}]
+    enriched = _enforce_citation_integrity("Grounded answer [C9]", citations, min_required=1)
+    assert "[C9]" not in enriched
+    assert enriched.endswith("[C1]")
+
+
+def test_enforce_citation_integrity_adds_marker_to_abstention_text() -> None:
+    citations = [{"id": "C1"}]
+    enriched = _enforce_citation_integrity("Insufficient evidence in provided documents.", citations, min_required=1)
+    assert enriched == "Insufficient evidence in provided documents. [C1]"

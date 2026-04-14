@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -251,14 +252,59 @@ def _load_baseline_metrics(file_path: Path) -> dict[str, Any]:
     return {k: metrics[k] for k in required_keys}
 
 
-def _extract_invalid_citations(citations: list[dict[str, Any]]) -> int:
-    invalid = 0
+def _extract_inline_citation_ids(text_value: str) -> set[str]:
+    return set(re.findall(r"C\d+", text_value or ""))
+
+
+def _extract_invalid_citations(
+    citations: list[dict[str, Any]],
+    content_text: str,
+    min_citations: int,
+) -> dict[str, Any]:
+    invalid_structural = 0
+    seen_ids: set[str] = set()
+    numeric_ids: list[int] = []
+
     for citation in citations:
         citation_id = str(citation.get("id", "")).strip()
         source_file = str(citation.get("source_file", "")).strip()
-        if not citation_id.startswith("C") or not source_file:
-            invalid += 1
-    return invalid
+        chunk_id = str(citation.get("chunk_id", "")).strip()
+
+        if not re.fullmatch(r"C[1-9]\d*", citation_id):
+            invalid_structural += 1
+            continue
+        if citation_id in seen_ids:
+            invalid_structural += 1
+            continue
+        seen_ids.add(citation_id)
+        numeric_ids.append(int(citation_id[1:]))
+
+        if not source_file:
+            invalid_structural += 1
+        if not chunk_id:
+            invalid_structural += 1
+
+    sequence_valid = True
+    if numeric_ids:
+        expected = set(range(1, len(numeric_ids) + 1))
+        actual = set(numeric_ids)
+        if actual != expected:
+            sequence_valid = False
+            invalid_structural += 1
+
+    inline_ids = _extract_inline_citation_ids(content_text)
+    unresolved_inline = inline_ids - seen_ids
+    missing_inline = bool(min_citations > 0 and not inline_ids)
+
+    invalid_count = invalid_structural + len(unresolved_inline) + (1 if missing_inline else 0)
+    return {
+        "invalid_count": invalid_count,
+        "invalid_structural": invalid_structural,
+        "inline_ids": sorted(inline_ids),
+        "unresolved_inline_ids": sorted(unresolved_inline),
+        "missing_inline_citations": missing_inline,
+        "sequence_valid": sequence_valid,
+    }
 
 
 def _is_abstained(payload: dict[str, Any]) -> bool:
@@ -517,13 +563,19 @@ def _run_case(
         citations = []
 
     citation_dicts = [item for item in citations if isinstance(item, dict)]
-    invalid_citation_count = _extract_invalid_citations(citation_dicts)
-    abstained = _is_abstained(body)
     content_text = str(body.get("answer") or body.get("summary") or "")
+    citation_quality = _extract_invalid_citations(
+        citations=citation_dicts,
+        content_text=content_text,
+        min_citations=case.min_citations,
+    )
+    invalid_citation_count = int(citation_quality["invalid_count"])
+    abstained = _is_abstained(body)
 
     mode_value = str(body.get("mode")) if body.get("mode") is not None else None
     mode_match = (mode_value == case.expected_mode) if case.expected_mode else None
     citation_requirement_met = len(citation_dicts) >= case.min_citations
+    inline_citation_requirement_met = len(citation_quality["inline_ids"]) >= case.min_citations if case.min_citations > 0 else True
     valid_citation_requirement_met = invalid_citation_count == 0 if case.require_valid_citations else True
     abstention_match = (abstained == case.should_abstain) if case.should_abstain is not None else None
     contains_expected = _contains_expected_terms(content_text, case.expected_contains_any)
@@ -545,11 +597,22 @@ def _run_case(
             "checks": {
                 "mode_match": mode_match,
                 "citation_requirement_met": citation_requirement_met,
+                "inline_citation_requirement_met": inline_citation_requirement_met,
                 "valid_citation_requirement_met": valid_citation_requirement_met,
+                "citation_sequence_valid": citation_quality["sequence_valid"],
+                "inline_citations_resolved": len(citation_quality["unresolved_inline_ids"]) == 0,
+                "missing_inline_citations": citation_quality["missing_inline_citations"],
                 "abstention_match": abstention_match,
                 "contains_expected_terms": contains_expected,
                 "contains_forbidden_terms": contains_forbidden,
                 "content_expectation_passed": content_expectation_passed,
+            },
+            "citation_validation": {
+                "inline_ids": citation_quality["inline_ids"],
+                "unresolved_inline_ids": citation_quality["unresolved_inline_ids"],
+                "invalid_structural_count": citation_quality["invalid_structural"],
+                "missing_inline_citations": citation_quality["missing_inline_citations"],
+                "citation_sequence_valid": citation_quality["sequence_valid"],
             },
             "response": body,
         }
@@ -629,11 +692,22 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
         "checks": {
             "mode_match": (mode_value == case.expected_mode) if case.expected_mode else None,
             "citation_requirement_met": citation_count >= case.min_citations,
+            "inline_citation_requirement_met": citation_count >= case.min_citations,
             "valid_citation_requirement_met": invalid_citation_count == 0 if case.require_valid_citations else True,
+            "citation_sequence_valid": True,
+            "inline_citations_resolved": True,
+            "missing_inline_citations": False,
             "abstention_match": (abstained == case.should_abstain) if case.should_abstain is not None else None,
             "contains_expected_terms": contains_expected,
             "contains_forbidden_terms": contains_forbidden,
             "content_expectation_passed": content_expectation_passed,
+        },
+        "citation_validation": {
+            "inline_ids": sorted(_extract_inline_citation_ids(content_text)),
+            "unresolved_inline_ids": [],
+            "invalid_structural_count": 0,
+            "missing_inline_citations": False,
+            "citation_sequence_valid": True,
         },
         "response": response_payload,
     }

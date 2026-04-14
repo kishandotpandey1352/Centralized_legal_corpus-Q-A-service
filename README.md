@@ -567,6 +567,34 @@ Evaluate Day 14 impact on faithfulness/recall:
 python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
 ```
 
+## Day 15 status (citation quality enforcement)
+
+Implemented:
+1. Runtime citation integrity enforcement in `backend/app/retrieval/service.py`:
+    - Final answer/summary text is normalized to keep only valid inline markers.
+    - Unresolved markers are removed.
+    - If configured citation evidence exists but inline markers are missing, required markers are appended deterministically.
+2. Eval-time stricter citation validation in `backend/scripts/eval_runner.py`:
+    - Citation structure checks (ID format, source path presence, chunk id, uniqueness).
+    - Inline marker checks (`[C1]`, `[C2]`, ...) against returned citation list.
+    - Sequence and unresolved marker checks.
+    - Case diagnostics now include citation validation details.
+3. Citation-sensitive golden cases tightened:
+    - Full suite: `mvp/golden_set_template.json`.
+    - Smoke suite: `mvp/golden_set_smoke.json`.
+
+Run targeted citation validation (smoke):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+Run full citation-sensitive evaluation against baseline:
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
