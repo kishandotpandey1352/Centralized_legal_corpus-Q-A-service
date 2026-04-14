@@ -266,6 +266,121 @@ Outputs:
 - Markdown summary under `mvp/experiments/run_*.md`
 - Exit code `1` when regression gate fails (for CI use)
 
+## Day 9 status (live-run stability + smoke suite + baseline promotion)
+
+Implemented:
+1. Runner stability controls in `backend/scripts/eval_runner.py`:
+    - `--answer-timeout-seconds`
+    - `--summary-timeout-seconds`
+    - `--max-retries`
+2. Fast smoke evaluation suite in `mvp/golden_set_smoke.json`.
+3. Full evaluation suite in `mvp/golden_set_template.json`.
+4. Baseline promotion helper in `backend/scripts/promote_baseline.py`.
+5. Repeated-run orchestrator in `backend/scripts/eval_series.py` for variance-aware confidence checks.
+6. CI workflow in `.github/workflows/eval-gates.yml` for automated smoke/full gates and promotion-policy validation.
+
+### Why CI pipeline was implemented
+
+The CI pipeline was added to make evaluation decisions reliable and repeatable:
+1. Prevent manual mistakes and inconsistent promotion decisions.
+2. Detect quality regressions early (before merging/deploying).
+3. Measure run-to-run variance instead of trusting a single run.
+4. Enforce Day 9 policy gates automatically (winner/regression/pass checks).
+
+### How CI pipeline is implemented
+
+Workflow file:
+- `.github/workflows/eval-gates.yml`
+
+Execution flow:
+1. Install backend dependencies.
+2. Run repeated smoke evaluations with strict thresholds.
+3. Run repeated full evaluations with stricter thresholds.
+4. Find latest full run artifact.
+5. Validate promotion policy in non-destructive mode using `--check-only`.
+6. Upload run artifacts for audit/review.
+
+### What the CI pipeline is used for
+
+Use this pipeline as an automatic release gate:
+1. Confirms challenger quality is stable across repeated runs.
+2. Confirms pass/fail gates are not regressing.
+3. Ensures baseline promotion policy is met before any manual promotion step.
+4. Produces artifacts (`run_*.json`, `run_*.md`, `series_latest.json`) for auditability.
+
+Run Day 9 smoke suite (from `backend/`):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 20 --summary-timeout-seconds 40 --max-retries 1
+```
+
+Run Day 9 full suite with separate answer/summary timeouts (from `backend/`):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --max-retries 2
+```
+
+Promote challenger to baseline after compare checks pass (from `backend/`):
+
+```bat
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\run_20260412_142535_167754.json
+```
+
+Optional promotion flags:
+- `--allow-offline` to permit promotion from offline-local runs.
+- `--force` to bypass policy checks (not recommended).
+
+Recommended promotion flow (smoke -> full -> promote):
+
+```bat
+REM 1) Fast smoke validation
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 20 --summary-timeout-seconds 40 --max-retries 1
+
+REM 2) Full evaluation validation
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --max-retries 2
+
+REM 3) Promote only after full run passes and challenger wins
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\run_YYYYMMDD_HHMMSS_xxxxxx.json
+```
+
+### Repeated live runs (variance confidence)
+
+Run repeated smoke evaluations and require a minimum challenger win/pass rate:
+
+```bat
+python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --runs 5 --answer-timeout-seconds 20 --summary-timeout-seconds 40 --max-retries 1 --stop-on-failure --require-winner-rate 0.60 --require-passing-rate 1.00
+```
+
+Run repeated full evaluations:
+
+```bat
+python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --runs 3 --answer-timeout-seconds 25 --summary-timeout-seconds 90 --max-retries 2 --stop-on-failure --require-winner-rate 0.70 --require-passing-rate 1.00
+```
+
+The series command writes an aggregate report to:
+- `mvp/experiments/series_latest.json`
+
+### CI automation (smoke/full + promotion policy)
+
+GitHub Actions workflow:
+- `.github/workflows/eval-gates.yml`
+
+What it does:
+1. Repeats smoke runs with winner/pass thresholds.
+2. Repeats full runs with winner/pass thresholds.
+3. Locates latest full run artifact.
+4. Enforces promotion policy in non-destructive mode via:
+
+```bat
+python scripts\promote_baseline.py --run-json <latest_run_json> --check-only
+```
+
+Policy check validates winner/regression/pass criteria without modifying baseline metrics.
+
+Current strict CI thresholds:
+1. Smoke: `winner_rate >= 0.60`, `passing_rate = 1.00`, fail-fast enabled.
+2. Full: `winner_rate >= 0.70`, `passing_rate = 1.00`, fail-fast enabled.
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

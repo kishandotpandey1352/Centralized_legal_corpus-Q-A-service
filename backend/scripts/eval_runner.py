@@ -72,6 +72,24 @@ def _parse_args() -> argparse.Namespace:
         help="Per-request timeout in seconds",
     )
     parser.add_argument(
+        "--answer-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional timeout override for answer cases.",
+    )
+    parser.add_argument(
+        "--summary-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional timeout override for summary cases.",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=1,
+        help="Retries for transient request failures (default: 1).",
+    )
+    parser.add_argument(
         "--offline",
         action="store_true",
         help="Run deterministic offline simulation (no API calls) while preserving report flow.",
@@ -207,9 +225,17 @@ def _contains_forbidden_terms(text_value: str, forbidden_terms: tuple[str, ...])
     return any(term.lower() in lowered for term in forbidden_terms)
 
 
-def _run_case(client: httpx.Client, api_base_url: str, case: GoldenCase, timeout_seconds: float) -> dict[str, Any]:
+def _run_case(
+    client: httpx.Client,
+    api_base_url: str,
+    case: GoldenCase,
+    timeout_seconds: float,
+    max_retries: int,
+) -> dict[str, Any]:
     if timeout_seconds < 0:
         raise ValueError("timeout_seconds must be non-negative")
+    if max_retries < 0:
+        raise ValueError("max_retries must be non-negative")
 
     if case.kind == "answer":
         endpoint = f"{api_base_url.rstrip('/')}/query/answer"
@@ -218,18 +244,76 @@ def _run_case(client: httpx.Client, api_base_url: str, case: GoldenCase, timeout
         endpoint = f"{api_base_url.rstrip('/')}/query/summary"
         request_payload = {"source_file": case.source_file, "max_chunks": case.max_chunks}
 
-    start = perf_counter()
-    try:
-        response = client.post(endpoint, json=request_payload, timeout=timeout_seconds)
-        latency_ms = int((perf_counter() - start) * 1000)
-    except httpx.HTTPError as exc:
-        latency_ms = int((perf_counter() - start) * 1000)
+    retryable_status_codes = {429, 500, 502, 503, 504}
+    response: httpx.Response | None = None
+    attempt_errors: list[str] = []
+    attempt_count = 0
+    total_latency_ms = 0
+
+    for attempt in range(max_retries + 1):
+        attempt_count = attempt + 1
+        start = perf_counter()
+        try:
+            response = client.post(endpoint, json=request_payload, timeout=timeout_seconds)
+            attempt_latency = int((perf_counter() - start) * 1000)
+            total_latency_ms += attempt_latency
+        except httpx.HTTPError as exc:
+            attempt_latency = int((perf_counter() - start) * 1000)
+            total_latency_ms += attempt_latency
+            attempt_errors.append(f"attempt-{attempt_count}: {exc}")
+            if attempt < max_retries:
+                continue
+            return {
+                "case_id": case.case_id,
+                "kind": case.kind,
+                "category": case.category,
+                "request": request_payload,
+                "latency_ms": total_latency_ms,
+                "attempt_count": attempt_count,
+                "should_abstain": case.should_abstain,
+                "expected_mode": case.expected_mode,
+                "min_citations": case.min_citations,
+                "require_valid_citations": case.require_valid_citations,
+                "expected_contains_any": list(case.expected_contains_any),
+                "expected_not_contains_any": list(case.expected_not_contains_any),
+                "human_scores": {
+                    "faithfulness": case.human_faithfulness,
+                    "answer_correctness": case.human_correctness,
+                },
+                "notes": case.notes,
+                "status_code": None,
+                "ok": False,
+                "error": "request-error: " + " | ".join(attempt_errors),
+                "mode": "request-error",
+                "used_chunks": 0,
+                "citation_count": 0,
+                "invalid_citation_count": 0,
+                "abstained": None,
+                "checks": {
+                    "mode_match": None,
+                    "citation_requirement_met": False,
+                    "valid_citation_requirement_met": False,
+                    "abstention_match": None,
+                    "contains_expected_terms": None,
+                    "contains_forbidden_terms": None,
+                    "content_expectation_passed": None,
+                },
+            }
+
+        if response.status_code in retryable_status_codes and attempt < max_retries:
+            attempt_errors.append(f"attempt-{attempt_count}: retryable-status-{response.status_code}")
+            continue
+
+        break
+
+    if response is None:
         return {
             "case_id": case.case_id,
             "kind": case.kind,
             "category": case.category,
             "request": request_payload,
-            "latency_ms": latency_ms,
+            "latency_ms": total_latency_ms,
+            "attempt_count": attempt_count,
             "should_abstain": case.should_abstain,
             "expected_mode": case.expected_mode,
             "min_citations": case.min_citations,
@@ -243,7 +327,7 @@ def _run_case(client: httpx.Client, api_base_url: str, case: GoldenCase, timeout
             "notes": case.notes,
             "status_code": None,
             "ok": False,
-            "error": f"request-error: {exc}",
+            "error": "request-error: unknown request state",
             "mode": "request-error",
             "used_chunks": 0,
             "citation_count": 0,
@@ -265,7 +349,8 @@ def _run_case(client: httpx.Client, api_base_url: str, case: GoldenCase, timeout
         "kind": case.kind,
         "category": case.category,
         "request": request_payload,
-        "latency_ms": latency_ms,
+        "latency_ms": total_latency_ms,
+        "attempt_count": attempt_count,
         "should_abstain": case.should_abstain,
         "expected_mode": case.expected_mode,
         "min_citations": case.min_citations,
@@ -604,6 +689,12 @@ def main() -> int:
     eval_source = "api"
     with httpx.Client() as client:
         for case in cases:
+            case_timeout_seconds = args.timeout_seconds
+            if case.kind == "answer" and args.answer_timeout_seconds is not None:
+                case_timeout_seconds = args.answer_timeout_seconds
+            if case.kind == "summary" and args.summary_timeout_seconds is not None:
+                case_timeout_seconds = args.summary_timeout_seconds
+
             if args.offline:
                 case_results.append(_run_case_offline(case))
             else:
@@ -612,7 +703,8 @@ def main() -> int:
                         client=client,
                         api_base_url=args.api_base_url,
                         case=case,
-                        timeout_seconds=args.timeout_seconds,
+                        timeout_seconds=case_timeout_seconds,
+                        max_retries=args.max_retries,
                     )
                 )
 

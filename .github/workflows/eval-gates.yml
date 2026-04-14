@@ -1,0 +1,93 @@
+name: Eval Gates
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "FastAPI base URL (must be reachable by runner)"
+        required: true
+        default: "http://localhost:8000"
+      smoke_runs:
+        description: "Number of repeated smoke runs"
+        required: true
+        default: "3"
+      full_runs:
+        description: "Number of repeated full runs"
+        required: true
+        default: "2"
+
+jobs:
+  eval-gates:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Repeated smoke runs (variance gate)
+        run: >-
+          python scripts/eval_series.py
+          --api-base-url "${{ github.event.inputs.api_base_url }}"
+          --cases ../mvp/golden_set_smoke.json
+          --baseline ../mvp/experiments/baseline_metrics.json
+          --runs "${{ github.event.inputs.smoke_runs }}"
+          --answer-timeout-seconds 20
+          --summary-timeout-seconds 40
+          --max-retries 1
+          --stop-on-failure
+          --require-winner-rate 0.60
+          --require-passing-rate 1.00
+
+      - name: Repeated full runs (variance gate)
+        run: >-
+          python scripts/eval_series.py
+          --api-base-url "${{ github.event.inputs.api_base_url }}"
+          --cases ../mvp/golden_set_template.json
+          --baseline ../mvp/experiments/baseline_metrics.json
+          --runs "${{ github.event.inputs.full_runs }}"
+          --answer-timeout-seconds 25
+          --summary-timeout-seconds 90
+          --max-retries 2
+          --stop-on-failure
+          --require-winner-rate 0.70
+          --require-passing-rate 1.00
+
+      - name: Find latest full run artifact
+        id: latest_run
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path("../mvp/experiments")
+          runs = sorted(root.glob("run_*.json"), key=lambda p: p.stat().st_mtime)
+          if not runs:
+              raise SystemExit("No run artifacts found")
+          latest = runs[-1]
+          with Path("$GITHUB_OUTPUT").open("a", encoding="utf-8") as fh:
+              fh.write(f"run_json={latest.as_posix()}\n")
+          print(f"latest run: {latest}")
+          PY
+
+      - name: Enforce promotion policy (non-destructive)
+        run: >-
+          python scripts/promote_baseline.py
+          --run-json "${{ steps.latest_run.outputs.run_json }}"
+          --check-only
+
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-artifacts
+          path: |
+            mvp/experiments/run_*.json
+            mvp/experiments/run_*.md
+            mvp/experiments/series_latest.json

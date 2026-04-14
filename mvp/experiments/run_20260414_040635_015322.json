@@ -1,0 +1,2048 @@
+{
+  "run_id": "20260414_040635_015322",
+  "api_base_url": "http://localhost:8000",
+  "cases_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_template.json",
+  "eval_source": "api",
+  "summary": {
+    "total_cases": 24,
+    "successful_cases": 24,
+    "failed_cases": 0,
+    "abstention_labeled_cases": 24,
+    "abstention_matches": 19,
+    "abstention_accuracy": 0.7917
+  },
+  "case_results": [
+    {
+      "case_id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What is the cure period for material breach?",
+        "top_k": 3
+      },
+      "latency_ms": 2203,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct factual lookup for termination terms.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What is the cure period for material breach?",
+        "answer": "Either party may terminate for material breach if the breach remains uncured for thirty (30) days after written notice. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.476451
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.469274
+          },
+          {
+            "id": "C3",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.463045
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.476451,
+        "raw_top_score": 0.476451,
+        "lexical_confidence": 0.75
+      }
+    },
+    {
+      "case_id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "top_k": 3
+      },
+      "latency_ms": 181,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "time extension",
+        "requested"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires identifying document context plus requested remedy.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "answer": "On 30 October 2025, the Registry submitted its \u2018Registry Request for Extension of Time\u20194 (the \u2018Extension of Time Request\u2019), in which it requested an extension of time for the VPRS to continue its administrative eligibility process \u2018as deemed appropriate by the Chamber\u2019.5 4. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "7e3acfc6-df54-4c60-bae6-e848fcf74f31",
+            "chunk_index": 9,
+            "page_range": "4",
+            "section_title": null,
+            "score": 0.626093
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "7b5c1989-9899-48fd-934b-f3924819429d",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": "On 19 December 2025, the Chamber issued an order suspending the initial deadline of 2",
+            "score": 0.622552
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "0ab92908-4aa9-4665-b5bf-9bad0b2c3056",
+            "chunk_index": 5,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.610096
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.626093,
+        "raw_top_score": 0.626093,
+        "lexical_confidence": 0.666667
+      }
+    },
+    {
+      "case_id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the moon made of according to these legal documents?",
+        "top_k": 3
+      },
+      "latency_ms": 172,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "moon is"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Pure abstention control question outside corpus scope.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What is the moon made of according to these legal documents?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "de48d37a-63a9-43e1-9992-02a78a951650",
+            "chunk_index": 10,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.418917
+          },
+          {
+            "id": "C2",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "5e1f3b01-a863-463b-b7bf-c559379ceae8",
+            "chunk_index": 3,
+            "page_range": "2",
+            "section_title": null,
+            "score": 0.41569
+          },
+          {
+            "id": "C3",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "0cd0b29f-36b2-4f5e-a576-e48c9d2bf482",
+            "chunk_index": 11,
+            "page_range": null,
+            "section_title": "That the partners to this deed are partners in their individual capacity/representing HUF styled as M/s. ..................................... The parties do not represent any other person.",
+            "score": 0.415389
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.166667,
+        "raw_top_score": 0.418917,
+        "lexical_confidence": 0.166667
+      }
+    },
+    {
+      "case_id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 6
+      },
+      "latency_ms": 5246,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Primary summary sanity check with full chunk budget.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "Scope of Services: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. Term and Termination: The Agreement is for twelve months from January 1, 2026; either party can terminate for material breach after thirty days of written notice. Confidentiality: Both parties must maintain strict confidentiality of non-public information and may disclose only to necessary employees or contractors under equivalent obligations. Data Protection: Provider must implement reasonable safeguards to protect Client data and notify the Client within seventy-two hours of a confirmed breach. Limitation of Liability: Each party's liability is capped at fees paid by the Client in the preceding twelve months, except for willful misconduct, fraud, or confidentiality violations. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "A4",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "Under the service agreement, what event can trigger termination?",
+        "top_k": 4
+      },
+      "latency_ms": 154,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "termination",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.87,
+        "answer_correctness": 0.82
+      },
+      "notes": "Direct lookup for termination trigger language.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 4,
+      "citation_count": 4,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "Under the service agreement, what event can trigger termination?",
+        "answer": "MASTER SERVICES AGREEMENT This Master Services Agreement (\"Agreement\") is entered into on January 1, 2026, by and between Alpha Legal Solutions Pvt. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.562182
+          },
+          {
+            "id": "C2",
+            "source_file": "Legal-Notice-for-Wrongful-Termination-LawRato.docx",
+            "chunk_id": "906ee4c1-9c35-4034-a42a-39e9f02d4d38",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": null,
+            "score": 0.557982
+          },
+          {
+            "id": "C3",
+            "source_file": "texas_department_of_public_safety_v._robert_christopher_callaway.pdf",
+            "chunk_id": "4cc625e1-eb5b-4aed-9efb-df2c058428b9",
+            "chunk_index": 12,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.504402
+          },
+          {
+            "id": "C4",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "d7d5f32d-9a1b-47ff-910b-7f87db5b6c34",
+            "chunk_index": 20,
+            "page_range": "8",
+            "section_title": null,
+            "score": 0.50284
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "evidence-direct",
+        "top_score": 0.562182,
+        "raw_top_score": 0.562182,
+        "lexical_confidence": 0.714286
+      }
+    },
+    {
+      "case_id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "top_k": 3
+      },
+      "latency_ms": 160,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "I think",
+        "probably"
+      ],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Citation-sensitive variant should keep explicit citation markers.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": false,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.507897
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "0f750a15-918f-4605-8505-f1c6ea886acd",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 2 April 2024, the Registry filed its submissions pursuant to the Reparations Order2 in",
+            "score": 0.492442
+          },
+          {
+            "id": "C3",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "fd7dd890-7cc1-4efd-bed0-94b041ad754f",
+            "chunk_index": 6,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.489195
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.25,
+        "raw_top_score": 0.507897,
+        "lexical_confidence": 0.25
+      }
+    },
+    {
+      "case_id": "A6",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the filing deadline for a patent in this corpus?",
+        "top_k": 3
+      },
+      "latency_ms": 169,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "patent deadline"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention check for out-of-domain intellectual property query.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": false,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "What is the filing deadline for a patent in this corpus?",
+        "answer": "ICC-02/04-01/15 4/6 2 April 2026 time to continue its administrative eligibility process by 31 January 2026.7 The TFV and the OPCV were invited to submit any observations on this topic by the same deadline.8 6. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "5f2bb4db-caf0-4e3a-a1c2-20d0ed753517",
+            "chunk_index": 0,
+            "page_range": "1",
+            "section_title": null,
+            "score": 0.491287
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "bb486bed-1c0f-40fe-a181-f5d7bb6633ea",
+            "chunk_index": 7,
+            "page_range": "4",
+            "section_title": "To reach its decision on the Extension of Time Request, the Chamber considers it necessary",
+            "score": 0.47278
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "0243bb2d-5cc6-47b0-9441-1617777664b5",
+            "chunk_index": 16,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.472622
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.4,
+        "raw_top_score": 0.491287,
+        "lexical_confidence": 0.4
+      }
+    },
+    {
+      "case_id": "A7",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Summarize the remedy process after a material breach is identified.",
+        "top_k": 5
+      },
+      "latency_ms": 161,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "breach",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.83,
+        "answer_correctness": 0.8
+      },
+      "notes": "Requires combining breach trigger and cure-period context.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 5,
+      "citation_count": 5,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": false,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": true,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "Summarize the remedy process after a material breach is identified.",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "31437382-5df2-47e2-9dd4-e914ccf4bf98",
+            "chunk_index": 22,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.537327
+          },
+          {
+            "id": "C2",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "888d0052-f7e2-435d-b9ce-458ac9812e0c",
+            "chunk_index": 52,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.536813
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.532164
+          },
+          {
+            "id": "C4",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.522885
+          },
+          {
+            "id": "C5",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "1958b8c7-fd27-499f-9b63-cee708b01efe",
+            "chunk_index": 13,
+            "page_range": "5",
+            "section_title": null,
+            "score": 0.521822
+          }
+        ],
+        "used_chunks": 5,
+        "mode": "low-confidence",
+        "top_score": 0.166667,
+        "raw_top_score": 0.537327,
+        "lexical_confidence": 0.166667
+      }
+    },
+    {
+      "case_id": "A8",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What does the agreement say about material breach?",
+        "top_k": 4
+      },
+      "latency_ms": 155,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "material breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.81
+      },
+      "notes": "Canonical phrase lookup for material breach clause.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 4,
+      "citation_count": 4,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What does the agreement say about material breach?",
+        "answer": "Either party may terminate for material breach if the breach remains uncured for thirty (30) days after written notice. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.533984
+          },
+          {
+            "id": "C2",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "61946f61-f235-4bb8-869a-b4e0cd4853ce",
+            "chunk_index": 37,
+            "page_range": "13",
+            "section_title": null,
+            "score": 0.506718
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "d0cf8407-b9d5-4f43-adf7-e9f0e247243e",
+            "chunk_index": 51,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.502952
+          },
+          {
+            "id": "C4",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 0.497993
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "evidence-direct",
+        "top_score": 0.5,
+        "raw_top_score": 0.533984,
+        "lexical_confidence": 0.5
+      }
+    },
+    {
+      "case_id": "A9",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Provide only supported facts: what cure period is listed in the agreement?",
+        "top_k": 3
+      },
+      "latency_ms": 159,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "cure period"
+      ],
+      "expected_not_contains_any": [
+        "not sure"
+      ],
+      "human_scores": {
+        "faithfulness": 0.91,
+        "answer_correctness": 0.89
+      },
+      "notes": "Should avoid speculative language and maintain citations.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "Provide only supported facts: what cure period is listed in the agreement?",
+        "answer": "MASTER SERVICES AGREEMENT This Master Services Agreement (\"Agreement\") is entered into on January 1, 2026, by and between Alpha Legal Solutions Pvt. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.537025
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.513146
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "0f750a15-918f-4605-8505-f1c6ea886acd",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 2 April 2024, the Registry filed its submissions pursuant to the Reparations Order2 in",
+            "score": 0.507258
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.5,
+        "raw_top_score": 0.537025,
+        "lexical_confidence": 0.5
+      }
+    },
+    {
+      "case_id": "A10",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What are the calorie requirements for astronauts in these documents?",
+        "top_k": 3
+      },
+      "latency_ms": 156,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "astronaut"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention probe for irrelevant domain prompt.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What are the calorie requirements for astronauts in these documents?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "7e3acfc6-df54-4c60-bae6-e848fcf74f31",
+            "chunk_index": 9,
+            "page_range": "4",
+            "section_title": null,
+            "score": 0.38393
+          },
+          {
+            "id": "C2",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "8cf28665-3de0-4b90-a2a1-1d19115d4136",
+            "chunk_index": 38,
+            "page_range": "13",
+            "section_title": null,
+            "score": 0.377992
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "ce0a6d63-012d-45ac-99ed-847b5c69026a",
+            "chunk_index": 14,
+            "page_range": "5",
+            "section_title": null,
+            "score": 0.37081
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.333333,
+        "raw_top_score": 0.38393,
+        "lexical_confidence": 0.333333
+      }
+    },
+    {
+      "case_id": "A11",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Explain in one grounded sentence what must happen before termination after breach.",
+        "top_k": 5
+      },
+      "latency_ms": 4440,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "termination",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.84,
+        "answer_correctness": 0.8
+      },
+      "notes": "Checks concise synthesis instead of direct quote fragments.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm",
+      "used_chunks": 5,
+      "citation_count": 5,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "Explain in one grounded sentence what must happen before termination after breach.",
+        "answer": "Before termination after breach, the breaching party must be given thirty (30) days to cure the breach after written notice . [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 0.541403
+          },
+          {
+            "id": "C2",
+            "source_file": "texas_department_of_public_safety_v._robert_christopher_callaway.pdf",
+            "chunk_id": "4cc625e1-eb5b-4aed-9efb-df2c058428b9",
+            "chunk_index": 12,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.533563
+          },
+          {
+            "id": "C3",
+            "source_file": "260410-PBS-202.pdf",
+            "chunk_id": "d3b268d0-fc96-4e7a-ab9e-5389091f250b",
+            "chunk_index": 23,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.526556
+          },
+          {
+            "id": "C4",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "142e17fe-1fe1-49e6-a95d-8dce6689e4e1",
+            "chunk_index": 7,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.521873
+          },
+          {
+            "id": "C5",
+            "source_file": "Statement-on-the-Situation-Concerning-the-ICC-Prosecutor.pdf",
+            "chunk_id": "8f869e06-b596-4ea9-85f1-c7ecc9274fa8",
+            "chunk_index": 2,
+            "page_range": "1",
+            "section_title": null,
+            "score": 0.52146
+          }
+        ],
+        "used_chunks": 5,
+        "mode": "llm",
+        "top_score": 0.375,
+        "raw_top_score": 0.541403,
+        "lexical_confidence": 0.375
+      }
+    },
+    {
+      "case_id": "A12",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Cite your evidence: what cure period appears in the retrieved agreement text?",
+        "top_k": 3
+      },
+      "latency_ms": 158,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "period"
+      ],
+      "expected_not_contains_any": [
+        "cannot determine"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.88
+      },
+      "notes": "Citation-anchoring variant to stress citation presence.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": false,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "Cite your evidence: what cure period appears in the retrieved agreement text?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.54942
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.525565
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "31437382-5df2-47e2-9dd4-e914ccf4bf98",
+            "chunk_index": 22,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.513682
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.111111,
+        "raw_top_score": 0.54942,
+        "lexical_confidence": 0.111111
+      }
+    },
+    {
+      "case_id": "A13",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "In the sample service agreement, what is said about breaches and cure opportunities?",
+        "top_k": 4
+      },
+      "latency_ms": 3774,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "breach",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Lookup phrased in broader wording to test semantic retrieval.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm",
+      "used_chunks": 4,
+      "citation_count": 4,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": false,
+        "contains_expected_terms": false,
+        "contains_forbidden_terms": true,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "question": "In the sample service agreement, what is said about breaches and cure opportunities?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.565308
+          },
+          {
+            "id": "C2",
+            "source_file": "texas_department_of_public_safety_v._robert_christopher_callaway.pdf",
+            "chunk_id": "16984c64-7b1c-4f38-a236-d835fc54a485",
+            "chunk_index": 15,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.503076
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "2849decb-7c58-4ee6-bf1f-ad4fefd946f9",
+            "chunk_index": 19,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.502935
+          },
+          {
+            "id": "C4",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "e5a00dff-d4b7-4532-a898-799654a1a224",
+            "chunk_index": 41,
+            "page_range": "15",
+            "section_title": null,
+            "score": 0.497482
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "llm",
+        "top_score": 0.375,
+        "raw_top_score": 0.565308,
+        "lexical_confidence": 0.375
+      }
+    },
+    {
+      "case_id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "top_k": 3
+      },
+      "latency_ms": 161,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "cryptocurrency"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Abstention case for unsupported modern-finance topic.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "2cac8884-ec2d-43ab-82f7-fa25b050a44a",
+            "chunk_index": 4,
+            "page_range": null,
+            "section_title": "That the amount lying to the\u00a0credit\u00a0of the partners as on 1-4-1992 shall be deemed as their capital investment. Further capital, loans or deposits looking to the needs/requirements of the partnership ",
+            "score": 0.418422
+          },
+          {
+            "id": "C2",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "cb8f9ac4-3c77-40b0-9e70-9862b4942937",
+            "chunk_index": 9,
+            "page_range": null,
+            "section_title": "That the bank account or accounts have been and shall be maintained in the name of the firm and shall be operated singly or jointly by the partners.",
+            "score": 0.413143
+          },
+          {
+            "id": "C3",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "265dbe5b-fa57-4def-a1cd-9b762004ae25",
+            "chunk_index": 5,
+            "page_range": null,
+            "section_title": "That Shri ................................ Shri ..................... and Shri ............................ the parties of the ....................... parts have agreed to keep themselves actively eng",
+            "score": 0.411509
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.142857,
+        "raw_top_score": 0.418422,
+        "lexical_confidence": 0.142857
+      }
+    },
+    {
+      "case_id": "A15",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "What sequence of actions is described from breach notice to possible termination?",
+        "top_k": 5
+      },
+      "latency_ms": 161,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "notice",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Temporal synthesis case across adjacent contractual details.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 5,
+      "citation_count": 5,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What sequence of actions is described from breach notice to possible termination?",
+        "answer": "Either party may terminate for material breach if the breach remains uncured for thirty (30) days after written notice. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 0.543493
+          },
+          {
+            "id": "C2",
+            "source_file": "260410-PBS-202.pdf",
+            "chunk_id": "d3b268d0-fc96-4e7a-ab9e-5389091f250b",
+            "chunk_index": 23,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.525917
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "888d0052-f7e2-435d-b9ce-458ac9812e0c",
+            "chunk_index": 52,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.525283
+          },
+          {
+            "id": "C4",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "de48d37a-63a9-43e1-9992-02a78a951650",
+            "chunk_index": 10,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.522698
+          },
+          {
+            "id": "C5",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.516701
+          }
+        ],
+        "used_chunks": 5,
+        "mode": "evidence-direct",
+        "top_score": 0.428571,
+        "raw_top_score": 0.543493,
+        "lexical_confidence": 0.428571
+      }
+    },
+    {
+      "case_id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "top_k": 4
+      },
+      "latency_ms": 151,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "guess"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Tests citation-sensitive prompting with pre-termination condition.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 4,
+      "citation_count": 4,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "answer": "Section 21.105\u2019s objective standard doesn\u2019t insulate pretextual terminations of that sort. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "texas_department_of_public_safety_v._robert_christopher_callaway.pdf",
+            "chunk_id": "4cc625e1-eb5b-4aed-9efb-df2c058428b9",
+            "chunk_index": 12,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.554887
+          },
+          {
+            "id": "C2",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "b4850662-0f39-4f77-a8c5-93c5ed7b5773",
+            "chunk_index": 50,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.529931
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "888d0052-f7e2-435d-b9ce-458ac9812e0c",
+            "chunk_index": 52,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.529212
+          },
+          {
+            "id": "C4",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "85d2889b-58f5-4f1f-a192-415c1a58a9f0",
+            "chunk_index": 18,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.523822
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "evidence-direct",
+        "top_score": 0.4,
+        "raw_top_score": 0.554887,
+        "lexical_confidence": 0.4
+      }
+    },
+    {
+      "case_id": "A17",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What cure timeline is provided for a material breach under the sample agreement?",
+        "top_k": 3
+      },
+      "latency_ms": 151,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "material breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Direct cure-period retrieval with explicit material breach wording.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What cure timeline is provided for a material breach under the sample agreement?",
+        "answer": "Either party may terminate for material breach if the breach remains uncured for thirty (30) days after written notice. [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.56253
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "b6ea3f62-f05b-45c7-91ed-51e31ffa41f2",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.53489
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.51639
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.56253,
+        "raw_top_score": 0.56253,
+        "lexical_confidence": 0.625
+      }
+    },
+    {
+      "case_id": "A18",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What did the documents say about marine insurance hull coverage limits?",
+        "top_k": 3
+      },
+      "latency_ms": 147,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "hull coverage"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Out-of-scope insurance question should abstain.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "question": "What did the documents say about marine insurance hull coverage limits?",
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "d0cf8407-b9d5-4f43-adf7-e9f0e247243e",
+            "chunk_index": 51,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.479641
+          },
+          {
+            "id": "C2",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "9a521fd2-4980-41eb-8574-7808212718ff",
+            "chunk_index": 38,
+            "page_range": "14",
+            "section_title": null,
+            "score": 0.458087
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "88064a99-401a-4de9-a4dd-092ff2f909f8",
+            "chunk_index": 54,
+            "page_range": "19",
+            "section_title": null,
+            "score": 0.455596
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.111111,
+        "raw_top_score": 0.479641,
+        "lexical_confidence": 0.111111
+      }
+    },
+    {
+      "case_id": "S2",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 4
+      },
+      "latency_ms": 5417,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "agreement"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.86,
+        "answer_correctness": 0.82
+      },
+      "notes": "Mid-length summary budget for concise grounded abstraction.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "Scope of Services: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. Term and Termination: The agreement lasts for twelve months from January 1, 2026, with either party able to terminate for material breach after thirty days of written notice. Confidentiality: Both parties must maintain strict confidentiality of non-public information and may disclose only to necessary employees or contractors under equivalent obligations. Data Protection: Provider will implement reasonable safeguards to protect Client data and notify the Client within seventy-two hours of a confirmed data breach. Limitation of Liability: Each party's liability is capped at fees paid by the Client in the preceding twelve months, except for certain exclusions like willful misconduct or fraud. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 6
+      },
+      "latency_ms": 5187,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "-"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Citation-density check for multi-citation summary output.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": true,
+        "content_expectation_passed": false
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "**Scope of Services**: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. **Term and Termination**: The agreement lasts for twelve months from January 1, 2026, and either party can terminate it for a material breach that remains uncured after thirty days of written notice. **Confidentiality**: Both parties must maintain strict confidentiality of non-public business, legal, and technical information, disclosing such information only to employees or contractors with a need to know who are subject to equivalent confidentiality obligations. **Data Protection**: Provider will implement reasonable administrative, technical, and organizational safeguards to protect Client data. In case of a confirmed data breach, the provider must notify the client within seventy-two hours. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S4",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 2
+      },
+      "latency_ms": 5103,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.82,
+        "answer_correctness": 0.78
+      },
+      "notes": "Low-context summary check for graceful compression.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "Scope of Services: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. Term and Termination: The Agreement is for twelve months from January 1, 2026; either party can terminate for material breach after thirty days of written notice. Confidentiality: Both parties must maintain strict confidentiality of non-public information and may disclose only to necessary employees or contractors under equivalent obligations. Data Protection: Provider must implement reasonable safeguards to protect Client data and notify the Client within seventy-two hours of a confirmed breach. Limitation of Liability: Each party's liability is capped at fees paid by the Client in the preceding twelve months, except for willful misconduct, fraud, or confidentiality violations. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S5",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 8
+      },
+      "latency_ms": 5147,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.89,
+        "answer_correctness": 0.84
+      },
+      "notes": "Higher chunk budget to test coherent and citation-preserving summaries.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "Scope of Services: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. Term and Termination: The Agreement lasts for twelve months from January 1, 2026, and either party can terminate for material breach after thirty days of written notice. Confidentiality: Both parties must maintain strict confidentiality of non-public information and may disclose it only to necessary employees or contractors under equivalent obligations. Data Protection: Provider will implement reasonable safeguards to protect Client data and notify the Client within seventy-two hours of a confirmed breach. Limitation of Liability: Each party's liability is capped at fees paid by the Client in the preceding twelve months, except for certain exclusions like willful misconduct or fraud. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S6",
+      "kind": "summary",
+      "category": "citation_sensitivity",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 6
+      },
+      "latency_ms": 5615,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Citation-sensitive summary expecting explicit grounding and cure-term mention.",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "Scope of Services: Provider will deliver document review, contract abstraction, and compliance reporting services as defined in SOW-001. Term and Termination: The Agreement lasts for twelve months from January 1, 2026, and either party can terminate it for a material breach that remains uncured after thirty days of written notice. Confidentiality: Both parties must maintain strict confidentiality of non-public information and may disclose such information only to employees or contractors with a need to know who are subject to equivalent confidentiality obligations. Data Protection: Provider will implement reasonable safeguards to protect Client data, and must notify the Client of any confirmed data breach within seventy-two hours. Limitation of Liability: Each party's liability is capped at fees paid by the Client in the twelve months preceding the claim, except for willful misconduct, fraud, or confidentiality violations. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    }
+  ],
+  "challenger_metrics": {
+    "faithfulness": 0.8996,
+    "answer_correctness": 0.8725,
+    "retrieval_recall_at_5": 1.0,
+    "abstention_accuracy": 0.7917,
+    "hallucination_rate": 0.0,
+    "invalid_citation_rate": 0.0,
+    "latency_p95_ms": 5391,
+    "proxy_components": {
+      "faithfulness_proxy": 1.0,
+      "answer_correctness_proxy": 1.0,
+      "human_faithfulness_count": 24,
+      "human_correctness_count": 24,
+      "abstention_labeled_cases": 24,
+      "abstention_matches": 19
+    },
+    "notes": [
+      "Metrics are proxy estimates; replace with human-graded correctness/faithfulness for production benchmarking.",
+      "Faithfulness uses human_scores labels where present; proxy used for unlabeled cases.",
+      "Answer correctness uses human_scores labels where present; proxy used for unlabeled cases."
+    ]
+  },
+  "score": {
+    "overall_score": 0.8508,
+    "latency_penalty": 0.05,
+    "gates": {
+      "faithfulness": true,
+      "answer_correctness": true,
+      "retrieval_recall_at_5": true,
+      "hallucination_rate": true,
+      "invalid_citation_rate": true,
+      "latency_p95_ms": false
+    },
+    "pass_fail": "fail"
+  },
+  "compare": {
+    "winner": "baseline",
+    "delta_overall_score": 0.1298,
+    "baseline": {
+      "overall_score": 0.721,
+      "latency_penalty": 0.02,
+      "gates": {
+        "faithfulness": true,
+        "answer_correctness": true,
+        "retrieval_recall_at_5": true,
+        "hallucination_rate": true,
+        "invalid_citation_rate": true,
+        "latency_p95_ms": true
+      },
+      "pass_fail": "pass"
+    },
+    "challenger": {
+      "overall_score": 0.8508,
+      "latency_penalty": 0.05,
+      "gates": {
+        "faithfulness": true,
+        "answer_correctness": true,
+        "retrieval_recall_at_5": true,
+        "hallucination_rate": true,
+        "invalid_citation_rate": true,
+        "latency_p95_ms": false
+      },
+      "pass_fail": "fail"
+    },
+    "has_gate_regression": true,
+    "decision_reason": "Challenger did not meet the minimum improvement and gate criteria."
+  },
+  "baseline_metrics": {
+    "answer_correctness": 0.73,
+    "hallucination_rate": 0.1,
+    "retrieval_recall_at_5": 0.7,
+    "invalid_citation_rate": 0.08,
+    "abstention_accuracy": 0.84,
+    "faithfulness": 0.78,
+    "latency_p95_ms": 3400
+  }
+}

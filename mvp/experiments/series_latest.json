@@ -1,0 +1,38 @@
+{
+  "runs_requested": 2,
+  "runs_executed": 2,
+  "winner_rate": 0.0,
+  "passing_rate": 0.0,
+  "gate_regression_count": 2,
+  "overall_score_mean": 0.8718,
+  "overall_score_std": 0.0,
+  "latency_p95_ms_mean": 16202.5,
+  "latency_p95_ms_std": 10755.5,
+  "require_winner_rate": 0.0,
+  "require_passing_rate": 0.0,
+  "series_pass": true,
+  "run_reports": [
+    {
+      "run_index": 1,
+      "run_json": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_075856_194013.json",
+      "runner_exit_code": 1,
+      "winner": "baseline",
+      "has_gate_regression": true,
+      "pass_fail": "fail",
+      "overall_score": 0.8718,
+      "latency_p95_ms": 26958,
+      "eval_source": "api"
+    },
+    {
+      "run_index": 2,
+      "run_json": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_075910_513128.json",
+      "runner_exit_code": 1,
+      "winner": "baseline",
+      "has_gate_regression": true,
+      "pass_fail": "fail",
+      "overall_score": 0.8718,
+      "latency_p95_ms": 5447,
+      "eval_source": "api"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "runs_requested": 1,
+  "runs_executed": 1,
+  "winner_rate": 0.0,
+  "passing_rate": 0.0,
+  "gate_regression_count": 1,
+  "overall_score_mean": 0.8508,
+  "overall_score_std": 0.0,
+  "latency_p95_ms_mean": 5351,
+  "latency_p95_ms_std": 0.0,
+  "require_winner_rate": 0.0,
+  "require_passing_rate": 0.0,
+  "series_pass": true,
+  "run_reports": [
+    {
+      "run_index": 1,
+      "run_json": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\full_series\\run_20260414_080046_740605.json",
+      "runner_exit_code": 1,
+      "winner": "baseline",
+      "has_gate_regression": true,
+      "pass_fail": "fail",
+      "overall_score": 0.8508,
+      "latency_p95_ms": 5351,
+      "eval_source": "api"
+    }
+  ]
+}

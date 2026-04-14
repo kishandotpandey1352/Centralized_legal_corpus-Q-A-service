@@ -107,6 +107,11 @@ python scripts\eval_runner.py --offline --cases ..\mvp\golden_set_template.json 
 
 ## Day 8 Command Cookbook
 
+Day 9 implementation adds:
+- live-run stability controls in `eval_runner.py` (`--answer-timeout-seconds`, `--summary-timeout-seconds`, `--max-retries`)
+- smoke suite file `mvp/golden_set_smoke.json`
+- baseline promotion script `backend/scripts/promote_baseline.py`
+
 ### 1. API health check (PowerShell)
 From project root:
 
@@ -149,11 +154,25 @@ From `backend/`:
 python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json
 ```
 
+### 6b. Run smoke suite (fast PR-style check)
+From `backend/`:
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 20 --summary-timeout-seconds 40 --max-retries 1
+```
+
 ### 7. Run with custom timeout and output directory
 From `backend/`:
 
 ```bat
 python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --timeout-seconds 30 --output-dir ..\mvp\experiments
+```
+
+### 7b. Run full suite with separate answer/summary timeout controls
+From `backend/`:
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --max-retries 2
 ```
 
 ### 8. Run targeted test cases only (create mini golden set)
@@ -215,6 +234,17 @@ From project root (PowerShell):
 $latest = Get-ChildItem .\mvp\experiments\run_*.md | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 Get-Content $latest.FullName
 ```
+
+### 11. Promote challenger to baseline after policy checks
+From `backend/`:
+
+```bat
+python scripts\promote_baseline.py --run-json ..\mvp\experiments\run_20260412_142535_167754.json
+```
+
+Optional flags:
+- `--allow-offline` to permit promotion from offline-local runs
+- `--force` to bypass policy checks (not recommended)
 
 ## Expected Outputs
 Saved in `mvp/experiments/`:

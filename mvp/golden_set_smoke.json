@@ -1,0 +1,186 @@
+{
+  "cases": [
+    {
+      "id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "question": "What is the cure period for material breach?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke direct lookup"
+    },
+    {
+      "id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "question": "Which document mentions a time extension request and what is requested?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "time extension",
+        "requested"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Smoke synthesis"
+    },
+    {
+      "id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "What is the moon made of according to these legal documents?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "moon is"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention"
+    },
+    {
+      "id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+      "top_k": 3,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "I think",
+        "probably"
+      ],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke citation sensitivity"
+    },
+    {
+      "id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 6,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary grounded"
+    },
+    {
+      "id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 6,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        " - "
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary citation density"
+    },
+    {
+      "id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "cryptocurrency"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention variant"
+    },
+    {
+      "id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "guess"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Smoke citation control"
+    }
+  ]
+}
