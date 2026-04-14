@@ -327,12 +327,12 @@ def _contains_forbidden_terms(text_value: str, forbidden_terms: tuple[str, ...])
 
 
 def _summary_sentence_count(text_value: str) -> int:
-    parts = [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", text_value.strip()) if segment.strip()]
-    if parts:
-        return len(parts)
-
     numbered_parts = [segment.strip() for segment in text_value.splitlines() if re.match(r"^\d+\.\s+", segment.strip())]
-    return len(numbered_parts)
+    if numbered_parts:
+        return len(numbered_parts)
+
+    parts = [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", text_value.strip()) if segment.strip()]
+    return len(parts)
 
 
 def _summary_word_count(text_value: str) -> int:

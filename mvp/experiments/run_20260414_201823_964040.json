@@ -1,0 +1,788 @@
+{
+  "run_id": "20260414_201823_964040",
+  "api_base_url": "http://localhost:8000",
+  "cases_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_smoke.json",
+  "eval_source": "api",
+  "summary": {
+    "total_cases": 8,
+    "successful_cases": 7,
+    "failed_cases": 1,
+    "abstention_labeled_cases": 7,
+    "abstention_matches": 6,
+    "abstention_accuracy": 0.8571
+  },
+  "runtime_controls": {
+    "timeout_seconds": 90.0,
+    "answer_timeout_seconds": 25.0,
+    "summary_timeout_seconds": 90.0,
+    "max_retries": 1,
+    "answer_max_retries": 2,
+    "summary_max_retries": 2,
+    "connect_timeout_seconds": 5.0,
+    "read_timeout_seconds": 90.0,
+    "write_timeout_seconds": 15.0,
+    "pool_timeout_seconds": 15.0,
+    "retry_backoff_seconds": 0.5,
+    "retry_backoff_multiplier": 2.0,
+    "max_retry_backoff_seconds": 5.0
+  },
+  "case_results": [
+    {
+      "case_id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What is the cure period for material breach?",
+        "top_k": 3
+      },
+      "latency_ms": 2211,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke direct lookup",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "question": "What is the cure period for material breach?",
+        "answer": "Either party may terminate for material breach if the breach remains uncured for thirty (30) days after written notice. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 0.463045
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.476451
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "0243bb2d-5cc6-47b0-9441-1617777664b5",
+            "chunk_index": 16,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.461519
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.463045,
+        "raw_top_score": 0.463045,
+        "lexical_confidence": 0.75
+      }
+    },
+    {
+      "case_id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "top_k": 3
+      },
+      "latency_ms": 155,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "time extension",
+        "requested"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Smoke synthesis",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "answer": "On 30 October 2025, the Registry submitted its \u2018Registry Request for Extension of Time\u20194 (the \u2018Extension of Time Request\u2019), in which it requested an extension of time for the VPRS to continue its administrative eligibility process \u2018as deemed appropriate by the Chamber\u2019.5 4. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "7e3acfc6-df54-4c60-bae6-e848fcf74f31",
+            "chunk_index": 9,
+            "page_range": "4",
+            "section_title": null,
+            "score": 0.626093
+          },
+          {
+            "id": "C2",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "7b5c1989-9899-48fd-934b-f3924819429d",
+            "chunk_index": 4,
+            "page_range": "3",
+            "section_title": "On 19 December 2025, the Chamber issued an order suspending the initial deadline of 2",
+            "score": 0.622552
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e256f2.pdf",
+            "chunk_id": "0ab92908-4aa9-4665-b5bf-9bad0b2c3056",
+            "chunk_index": 5,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.610096
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "evidence-direct",
+        "top_score": 0.626093,
+        "raw_top_score": 0.626093,
+        "lexical_confidence": 0.666667
+      }
+    },
+    {
+      "case_id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the moon made of according to these legal documents?",
+        "top_k": 3
+      },
+      "latency_ms": 2452,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "moon is"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention",
+      "status_code": null,
+      "ok": false,
+      "error": "request-error: attempt-1: [WinError 10054] An existing connection was forcibly closed by the remote host",
+      "mode": "request-error",
+      "used_chunks": 0,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": null,
+      "checks": {
+        "mode_match": null,
+        "citation_requirement_met": false,
+        "valid_citation_requirement_met": false,
+        "abstention_match": null,
+        "contains_expected_terms": null,
+        "contains_forbidden_terms": null,
+        "content_expectation_passed": null
+      }
+    },
+    {
+      "case_id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "top_k": 3
+      },
+      "latency_ms": 16899,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "I think",
+        "probably"
+      ],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke citation sensitivity",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": false,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "answer": "Insufficient evidence in provided documents. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "755eea96-8c48-4105-b29d-bb0e9b469984",
+            "chunk_index": 3,
+            "page_range": "3",
+            "section_title": "On 28 October 2025, the Registry submitted its \u2018Fifth Registry Periodic Report on Eligibility",
+            "score": 0.478083
+          },
+          {
+            "id": "C2",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "0e8623bd-53f6-4d5b-a6b6-c5d54b01ee87",
+            "chunk_index": 45,
+            "page_range": "15",
+            "section_title": null,
+            "score": 0.466218
+          },
+          {
+            "id": "C3",
+            "source_file": "0902ebd180e25790.pdf",
+            "chunk_id": "1ddd6a83-b0f8-4399-823d-e2f55ea5ceb7",
+            "chunk_index": 5,
+            "page_range": "3",
+            "section_title": null,
+            "score": 0.462993
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm",
+        "source_file_filter": null,
+        "document_type_filter": null,
+        "rerank_enabled": true,
+        "top_score": 0.375,
+        "raw_top_score": 0.478083,
+        "lexical_confidence": 0.375
+      }
+    },
+    {
+      "case_id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 6
+      },
+      "latency_ms": 4027,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary grounded",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true,
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": false,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 10,
+        "summary_word_count": 93
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "summary_quality": {
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": false,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 10,
+        "summary_word_count": 93
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "1. MASTER SERVICES AGREEMENT This Master Services Agreement (\"Agreement\") is entered into on January 1, 2026, by and between Alpha Legal Solutions Pvt. Ltd. (\"Provider\") and Northwind Retail LLC (\"Client\"). 1. Scope of Services Provider shall deliver document review, contract abstraction, and compliance reporting services 2. with a need to know and subject to equivalent confidentiality obligations. 4. Data Protection Provider shall implement reasonable administrative, technical, and organizational safeguards to protect Client data. Provider shall notify Client of any confirmed data breach without undue delay and no later than seventy-two ( [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "source_file": "sample_service_agreement.txt",
+        "max_chunks": 6
+      },
+      "latency_ms": 4037,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "-"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary citation density",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": true,
+        "content_expectation_passed": false,
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": false,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 10,
+        "summary_word_count": 93
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "summary_quality": {
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": false,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 10,
+        "summary_word_count": 93
+      },
+      "response": {
+        "source_file": "sample_service_agreement.txt",
+        "summary": "1. MASTER SERVICES AGREEMENT This Master Services Agreement (\"Agreement\") is entered into on January 1, 2026, by and between Alpha Legal Solutions Pvt. Ltd. (\"Provider\") and Northwind Retail LLC (\"Client\"). 1. Scope of Services Provider shall deliver document review, contract abstraction, and compliance reporting services 2. with a need to know and subject to equivalent confidentiality obligations. 4. Data Protection Provider shall implement reasonable administrative, technical, and organizational safeguards to protect Client data. Provider shall notify Client of any confirmed data breach without undue delay and no later than seventy-two ( [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "5dc00c5c-6b63-4f5b-9997-02232df8cc03",
+            "chunk_index": 0,
+            "page_range": null,
+            "section_title": "Scope of Services",
+            "score": 1.0
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt",
+            "chunk_id": "ab8904f6-8d1c-46b5-bd9f-e5aa2b1725f9",
+            "chunk_index": 1,
+            "page_range": null,
+            "section_title": "Data Protection",
+            "score": 1.0
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "llm-summary"
+      }
+    },
+    {
+      "case_id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "top_k": 3
+      },
+      "latency_ms": 158,
+      "attempt_count": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "cryptocurrency"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention variant",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 3,
+      "citation_count": 3,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": false,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "answer": "Insufficient evidence in provided documents. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "cb8f9ac4-3c77-40b0-9e70-9862b4942937",
+            "chunk_index": 9,
+            "page_range": null,
+            "section_title": "That the bank account or accounts have been and shall be maintained in the name of the firm and shall be operated singly or jointly by the partners.",
+            "score": 0.413143
+          },
+          {
+            "id": "C2",
+            "source_file": "national_trust_for_historic_preservation_in_the_united_states_v._nps.pdf",
+            "chunk_id": "8cf28665-3de0-4b90-a2a1-1d19115d4136",
+            "chunk_index": 38,
+            "page_range": "13",
+            "section_title": null,
+            "score": 0.39835
+          },
+          {
+            "id": "C3",
+            "source_file": "Partnership-Deed-LawRato3.docx",
+            "chunk_id": "0cd0b29f-36b2-4f5e-a576-e48c9d2bf482",
+            "chunk_index": 11,
+            "page_range": null,
+            "section_title": "That the partners to this deed are partners in their individual capacity/representing HUF styled as M/s. ..................................... The parties do not represent any other person.",
+            "score": 0.393186
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "low-confidence",
+        "top_score": 0.142857,
+        "raw_top_score": 0.413143,
+        "lexical_confidence": 0.142857
+      }
+    },
+    {
+      "case_id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "top_k": 4
+      },
+      "latency_ms": 158,
+      "attempt_count": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "guess"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Smoke citation control",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 4,
+      "citation_count": 4,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1",
+          "C2"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "answer": "Section 21.105\u2019s objective standard doesn\u2019t insulate pretextual terminations of that sort. [C1] [C2]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "texas_department_of_public_safety_v._robert_christopher_callaway.pdf",
+            "chunk_id": "4cc625e1-eb5b-4aed-9efb-df2c058428b9",
+            "chunk_index": 12,
+            "page_range": "6",
+            "section_title": null,
+            "score": 0.554887
+          },
+          {
+            "id": "C2",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "d7d5f32d-9a1b-47ff-910b-7f87db5b6c34",
+            "chunk_index": 20,
+            "page_range": "8",
+            "section_title": null,
+            "score": 0.51885
+          },
+          {
+            "id": "C3",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "b4850662-0f39-4f77-a8c5-93c5ed7b5773",
+            "chunk_index": 50,
+            "page_range": "18",
+            "section_title": null,
+            "score": 0.529931
+          },
+          {
+            "id": "C4",
+            "source_file": "cordero_v._ghilotti_construction_co._inc..pdf",
+            "chunk_id": "85d2889b-58f5-4f1f-a192-415c1a58a9f0",
+            "chunk_index": 18,
+            "page_range": "7",
+            "section_title": null,
+            "score": 0.523822
+          }
+        ],
+        "used_chunks": 4,
+        "mode": "evidence-direct",
+        "top_score": 0.4,
+        "raw_top_score": 0.554887,
+        "lexical_confidence": 0.4
+      }
+    }
+  ],
+  "challenger_metrics": {
+    "faithfulness": 0.9043,
+    "answer_correctness": 0.8771,
+    "retrieval_recall_at_5": 1.0,
+    "abstention_accuracy": 0.8571,
+    "hallucination_rate": 0.0,
+    "invalid_citation_rate": 0.0,
+    "latency_p95_ms": 13040,
+    "proxy_components": {
+      "faithfulness_proxy": 1.0,
+      "answer_correctness_proxy": 0.875,
+      "human_faithfulness_count": 7,
+      "human_correctness_count": 7,
+      "abstention_labeled_cases": 7,
+      "abstention_matches": 6
+    },
+    "notes": [
+      "Metrics are proxy estimates; replace with human-graded correctness/faithfulness for production benchmarking.",
+      "Faithfulness uses human_scores labels where present; proxy used for unlabeled cases.",
+      "Answer correctness uses human_scores labels where present; proxy used for unlabeled cases."
+    ]
+  },
+  "score": {
+    "overall_score": 0.8606,
+    "latency_penalty": 0.05,
+    "gates": {
+      "faithfulness": true,
+      "answer_correctness": true,
+      "retrieval_recall_at_5": true,
+      "hallucination_rate": true,
+      "invalid_citation_rate": true,
+      "latency_p95_ms": false
+    },
+    "pass_fail": "fail"
+  },
+  "compare": null
+}

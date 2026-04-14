@@ -597,31 +597,78 @@ python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline
 
 ## Day 16 status (summary quality upgrade)
 
+Day 16 checklist (compact):
+- Done:
+    - Summary prompt tightened to numbered, concise, grounded output with explicit drift guardrails.
+    - Runtime summary repair added for structure/verbosity drift and stronger citation density.
+    - Eval diagnostics expanded with summary-specific quality signals.
+    - Day 16 tests added/updated for summary repair and prompt constraints.
+- Verified:
+    - Targeted Day 16 pytest suite passed.
+    - Smoke eval executed on default API URL and on fresh port-8001 runtime.
+    - Summary quality diagnostics emitted in eval artifacts (`summary_source_alignment`, `summary_verbosity_ok`, `summary_structure_ok`, `summary_sentence_count`, `summary_word_count`).
+- Artifacts:
+    - `mvp/experiments/run_20260414_201823_964040.json`
+    - `mvp/experiments/run_20260414_202549_303012.json`
+    - `mvp/experiments/run_20260414_201823_964040.md`
+    - `mvp/experiments/run_20260414_202549_303012.md`
+
 Implemented:
 1. Summary structure and verbosity controls in `backend/app/llm/service.py`:
     - Prompt now requests 3-5 short numbered points.
     - Prompt enforces groundedness and a 170-word cap.
+    - Prompt now explicitly blocks unsupported legal conclusions outside provided context.
 2. Runtime summary quality repair in `backend/app/retrieval/service.py`:
     - Structured summary fallback (`1. ... [C1]`) generated from grounded context chunks.
     - Drift/verbosity detector repairs uncertain or overly long summaries.
     - Summary output now targets at least two inline citations when available.
+    - Citation integrity now supports preserving summary line structure during post-processing.
 3. Eval groundedness and quality diagnostics in `backend/scripts/eval_runner.py`:
     - `summary_source_alignment`
     - `summary_verbosity_ok`
     - `summary_structure_ok`
     - `summary_sentence_count`
     - `summary_word_count`
+4. Test coverage updates:
+    - Added Day 16 unit tests for summary-repair heuristics and structured-summary behavior in `backend/tests/test_qa_fallback.py`.
+    - Updated prompt assertions for Day 16 summary instructions in `backend/tests/test_llm_prompt.py`.
 
-Run Day 16 targeted tests:
+Commands used during Day 16 validation:
+
+1. Targeted Day 16 test suite:
+
+```bat
+.venv\Scripts\python.exe -m pytest tests\test_qa_fallback.py tests\test_llm_prompt.py tests\test_query_summary_integration.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
+```
+
+2. Smoke eval run (default API base URL):
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+3. Fresh runtime check on a dedicated port:
+
+```bat
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+```
+
+4. Smoke eval against the fresh port-8001 runtime:
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --api-base-url http://127.0.0.1:8001 --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+5. Optional process stop when done:
+
+```bat
+Ctrl+C
+```
+
+Equivalent command format kept for convenience:
 
 ```bat
 python -m pytest tests\test_qa_fallback.py tests\test_llm_prompt.py tests\test_query_summary_integration.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
-```
-
-Run Day 16 smoke eval and inspect summary diagnostics:
-
-```bat
-python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
 ```
 
 ## External embedding model setup (download + usage)

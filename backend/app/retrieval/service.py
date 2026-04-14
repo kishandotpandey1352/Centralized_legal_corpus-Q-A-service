@@ -448,7 +448,12 @@ def _extract_inline_citation_ids(text_value: str) -> list[str]:
     return re.findall(r"C\d+", text_value or "")
 
 
-def _enforce_citation_integrity(text_value: str, citations: list[dict[str, Any]], min_required: int = 1) -> str:
+def _enforce_citation_integrity(
+    text_value: str,
+    citations: list[dict[str, Any]],
+    min_required: int = 1,
+    preserve_line_breaks: bool = False,
+) -> str:
     stripped = text_value.strip()
     if not stripped:
         return stripped
@@ -474,8 +479,13 @@ def _enforce_citation_integrity(text_value: str, citations: list[dict[str, Any]]
                 break
 
     # Rebuild text with a stable inline citation tail using only known citation IDs.
-    core = re.sub(r"\s*\[C\d+\]\s*", " ", stripped)
-    core = re.sub(r"\s+", " ", core).strip()
+    if preserve_line_breaks:
+        core = re.sub(r"\[C\d+\]", "", stripped)
+        lines = [re.sub(r"\s+", " ", line).strip() for line in core.splitlines() if line.strip()]
+        core = "\n".join(lines)
+    else:
+        core = re.sub(r"\s*\[C\d+\]\s*", " ", stripped)
+        core = re.sub(r"\s+", " ", core).strip()
     if not core:
         core = "Insufficient evidence in provided documents."
 
@@ -762,6 +772,7 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
         _polish_summary_text(summary_text),
         citations,
         min_required=min_summary_inline,
+        preserve_line_breaks=True,
     )
 
     if _summary_needs_repair(polished_summary, min_summary_inline):
@@ -769,6 +780,7 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
             _structured_summary_from_contexts(contexts, max_points=4),
             citations,
             min_required=min_summary_inline,
+            preserve_line_breaks=True,
         )
 
     return {

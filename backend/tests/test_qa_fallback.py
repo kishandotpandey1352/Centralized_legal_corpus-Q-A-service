@@ -156,6 +156,14 @@ def test_enforce_citation_integrity_adds_marker_to_abstention_text() -> None:
     assert enriched == "Insufficient evidence in provided documents. [C1]"
 
 
+def test_enforce_citation_integrity_preserves_lines_for_summary() -> None:
+    citations = [{"id": "C1"}, {"id": "C2"}]
+    text = "1. Scope of services text [C1]\n2. Term and termination text [C2]"
+    enriched = _enforce_citation_integrity(text, citations, min_required=2, preserve_line_breaks=True)
+    assert "\n" in enriched
+    assert enriched.endswith("[C1] [C2]")
+
+
 def test_structured_summary_from_contexts_returns_numbered_lines() -> None:
     summary = _structured_summary_from_contexts(
         [
