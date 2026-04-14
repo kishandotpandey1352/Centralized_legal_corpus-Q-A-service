@@ -529,6 +529,44 @@ Optional flags:
 1. `--allow-partial` to allow updating only one reviewer score field in a row.
 2. `--output <path>` to write to a separate JSON file instead of in-place update.
 
+## Day 14 status (retrieval quality improvements)
+
+Implemented:
+1. Metadata filters added for retrieval/answer:
+    - `source_file`
+    - `document_type`
+2. Candidate reranking added:
+    - Hybrid score combines vector similarity with lexical overlap.
+    - Configurable lexical weight via `qa_rerank_lexical_weight` in `backend/app/core/config.py`.
+3. API request model updates in `backend/app/api/routes_retrieval.py`:
+    - `rerank` toggle
+    - `candidate_pool_size` for rerank candidate breadth.
+4. Tests added/updated:
+    - `backend/tests/test_retrieval_filters_and_rerank.py`
+    - `backend/tests/test_query_answer_integration.py` signature compatibility.
+
+Example retrieval with metadata filter + reranking:
+
+```bat
+echo {"query":"What is the cure period for material breach?","top_k":5,"source_file":"sample_service_agreement.txt","document_type":"txt","rerank":true,"candidate_pool_size":20} > retrieve_payload.json
+curl -X POST http://localhost:8000/query/retrieve -H "Content-Type: application/json" --data-binary @retrieve_payload.json
+del retrieve_payload.json
+```
+
+Example answer with metadata filter + reranking:
+
+```bat
+echo {"question":"What is the cure period for material breach?","top_k":5,"source_file":"sample_service_agreement.txt","document_type":"txt","rerank":true,"candidate_pool_size":20} > answer_payload.json
+curl -X POST http://localhost:8000/query/answer -H "Content-Type: application/json" --data-binary @answer_payload.json
+del answer_payload.json
+```
+
+Evaluate Day 14 impact on faithfulness/recall:
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

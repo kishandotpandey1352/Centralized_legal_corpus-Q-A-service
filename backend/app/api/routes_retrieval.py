@@ -9,11 +9,19 @@ from app.retrieval.service import answer_question, retrieve_similar_chunks, summ
 class RetrievalRequest(BaseModel):
     query: str = Field(min_length=1)
     top_k: int = Field(default=5, ge=1, le=20)
+    source_file: str | None = None
+    document_type: str | None = None
+    rerank: bool = True
+    candidate_pool_size: int | None = Field(default=None, ge=1, le=100)
 
 
 class AnswerRequest(BaseModel):
     question: str = Field(min_length=1)
     top_k: int = Field(default=5, ge=1, le=20)
+    source_file: str | None = None
+    document_type: str | None = None
+    rerank: bool = True
+    candidate_pool_size: int | None = Field(default=None, ge=1, le=100)
 
 
 class SummaryRequest(BaseModel):
@@ -27,7 +35,15 @@ router = APIRouter(prefix="/query", tags=["retrieval"])
 @router.post("/retrieve")
 def retrieve(request: RetrievalRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
-        return retrieve_similar_chunks(db, query=request.query, top_k=request.top_k)
+        return retrieve_similar_chunks(
+            db,
+            query=request.query,
+            top_k=request.top_k,
+            source_file=request.source_file,
+            document_type=request.document_type,
+            rerank=request.rerank,
+            candidate_pool_size=request.candidate_pool_size,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -35,7 +51,15 @@ def retrieve(request: RetrievalRequest, db: Session = Depends(get_db)) -> dict[s
 @router.post("/answer")
 def answer(request: AnswerRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
-        return answer_question(db, question=request.question, top_k=request.top_k)
+        return answer_question(
+            db,
+            question=request.question,
+            top_k=request.top_k,
+            source_file=request.source_file,
+            document_type=request.document_type,
+            rerank=request.rerank,
+            candidate_pool_size=request.candidate_pool_size,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

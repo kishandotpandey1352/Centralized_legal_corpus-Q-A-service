@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     qa_force_min_score: float = 0.45
     qa_min_lexical_overlap: float = 0.2
     qa_direct_answer_min_overlap: float = 0.55
+    qa_rerank_lexical_weight: float = 0.35
     summary_default_chunks: int = 6
 
     model_config = SettingsConfigDict(

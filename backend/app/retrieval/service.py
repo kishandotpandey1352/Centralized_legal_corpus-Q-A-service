@@ -11,7 +11,62 @@ from app.llm.service import build_grounded_prompt, build_summary_prompt, generat
 from app.retrieval.embeddings import embed_texts, vector_to_pg_literal
 
 
-def retrieve_similar_chunks(db: Session, query: str, top_k: int = 5) -> dict[str, object]:
+def _normalize_vector_score(score_value: float | int | None) -> float:
+    if not isinstance(score_value, (float, int)):
+        return 0.0
+    score = float(score_value)
+    if score < 0.0:
+        return 0.0
+    if score > 1.0:
+        return 1.0
+    return score
+
+
+def _rerank_results(
+    *,
+    query: str,
+    candidates: list[dict[str, Any]],
+    top_k: int,
+    lexical_weight: float = 0.35,
+) -> list[dict[str, Any]]:
+    if not candidates:
+        return []
+
+    lexical_weight = max(0.0, min(lexical_weight, 1.0))
+    vector_weight = 1.0 - lexical_weight
+    terms = _question_terms(query)
+
+    rescored: list[dict[str, Any]] = []
+    for item in candidates:
+        lexical_score = _chunk_overlap_ratio(terms, str(item.get("chunk_text", ""))) if terms else 0.0
+        vector_score = _normalize_vector_score(item.get("score"))
+        hybrid_score = (vector_weight * vector_score) + (lexical_weight * lexical_score)
+
+        updated = dict(item)
+        updated["vector_score"] = round(vector_score, 6)
+        updated["lexical_score"] = round(lexical_score, 6)
+        updated["hybrid_score"] = round(hybrid_score, 6)
+        rescored.append(updated)
+
+    rescored.sort(
+        key=lambda row: (
+            float(row.get("hybrid_score", 0.0)),
+            float(row.get("vector_score", 0.0)),
+        ),
+        reverse=True,
+    )
+    return rescored[:top_k]
+
+
+def retrieve_similar_chunks(
+    db: Session,
+    query: str,
+    top_k: int = 5,
+    source_file: str | None = None,
+    document_type: str | None = None,
+    rerank: bool = True,
+    candidate_pool_size: int | None = None,
+) -> dict[str, object]:
     cleaned_query = query.strip()
     if not cleaned_query:
         raise ValueError("Query cannot be empty")
@@ -30,44 +85,75 @@ def retrieve_similar_chunks(db: Session, query: str, top_k: int = 5) -> dict[str
     db.execute(text("SET LOCAL enable_bitmapscan = off"))
     db.execute(text("SET LOCAL ivfflat.probes = 10"))
 
-    rows = db.execute(
-        text(
-            """
-            SELECT
-                c.id,
-                c.document_id,
-                c.chunk_index,
-                c.chunk_text,
-                c.page_range,
-                c.section_title,
-                d.source_file,
-                (1 - (c.embedding <=> CAST(:query_vector AS vector))) AS score
-            FROM chunks c
-            JOIN documents d ON d.id = c.document_id
-            WHERE c.embedding IS NOT NULL
-            ORDER BY c.embedding <=> CAST(:query_vector AS vector)
-            LIMIT :top_k
-            """
-        ),
-        {"query_vector": query_vector, "top_k": top_k},
-    ).mappings().all()
+    cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
+    cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
+
+    pool_size = candidate_pool_size if candidate_pool_size is not None else top_k * 4
+    pool_size = max(top_k, min(pool_size, 100))
+
+    where_clauses = ["c.embedding IS NOT NULL"]
+    sql_params: dict[str, Any] = {"query_vector": query_vector, "candidate_pool": pool_size}
+
+    if cleaned_source_file:
+        where_clauses.append("d.source_file = :source_file")
+        sql_params["source_file"] = cleaned_source_file
+    if cleaned_document_type:
+        where_clauses.append("d.document_type = :document_type")
+        sql_params["document_type"] = cleaned_document_type
+
+    sql_query = f"""
+        SELECT
+            c.id,
+            c.document_id,
+            c.chunk_index,
+            c.chunk_text,
+            c.page_range,
+            c.section_title,
+            d.source_file,
+            d.document_type,
+            (1 - (c.embedding <=> CAST(:query_vector AS vector))) AS score
+        FROM chunks c
+        JOIN documents d ON d.id = c.document_id
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY c.embedding <=> CAST(:query_vector AS vector)
+        LIMIT :candidate_pool
+    """
+
+    rows = db.execute(text(sql_query), sql_params).mappings().all()
+
+    candidate_results = [
+        {
+            "chunk_id": str(row["id"]),
+            "document_id": str(row["document_id"]),
+            "source_file": row["source_file"],
+            "document_type": row["document_type"],
+            "chunk_index": row["chunk_index"],
+            "page_range": row["page_range"],
+            "section_title": row["section_title"],
+            "score": round(float(row["score"]), 6) if row["score"] is not None else None,
+            "chunk_text": row["chunk_text"],
+        }
+        for row in rows
+    ]
+
+    if rerank:
+        final_results = _rerank_results(
+            query=cleaned_query,
+            candidates=candidate_results,
+            top_k=top_k,
+            lexical_weight=settings.qa_rerank_lexical_weight,
+        )
+    else:
+        final_results = candidate_results[:top_k]
 
     return {
         "query": cleaned_query,
         "top_k": top_k,
-        "results": [
-            {
-                "chunk_id": str(row["id"]),
-                "document_id": str(row["document_id"]),
-                "source_file": row["source_file"],
-                "chunk_index": row["chunk_index"],
-                "page_range": row["page_range"],
-                "section_title": row["section_title"],
-                "score": round(float(row["score"]), 6) if row["score"] is not None else None,
-                "chunk_text": row["chunk_text"],
-            }
-            for row in rows
-        ],
+        "source_file": cleaned_source_file,
+        "document_type": cleaned_document_type,
+        "rerank_enabled": rerank,
+        "candidate_pool_size": pool_size,
+        "results": final_results,
     }
 
 
@@ -363,12 +449,28 @@ def _force_concise_cited_answer(results: list[dict[str, Any]]) -> str:
     return f"{sentence} [C1]"
 
 
-def answer_question(db: Session, question: str, top_k: int = 5) -> dict[str, Any]:
+def answer_question(
+    db: Session,
+    question: str,
+    top_k: int = 5,
+    source_file: str | None = None,
+    document_type: str | None = None,
+    rerank: bool = True,
+    candidate_pool_size: int | None = None,
+) -> dict[str, Any]:
     cleaned_question = question.strip()
     if not cleaned_question:
         raise ValueError("Question cannot be empty")
 
-    retrieval = retrieve_similar_chunks(db=db, query=cleaned_question, top_k=top_k)
+    retrieval = retrieve_similar_chunks(
+        db=db,
+        query=cleaned_question,
+        top_k=top_k,
+        source_file=source_file,
+        document_type=document_type,
+        rerank=rerank,
+        candidate_pool_size=candidate_pool_size,
+    )
     results = retrieval.get("results", [])
     citations = _build_citations(results)
 
@@ -459,6 +561,9 @@ def answer_question(db: Session, question: str, top_k: int = 5) -> dict[str, Any
         "citations": citations,
         "used_chunks": len(results),
         "mode": mode,
+        "source_file_filter": retrieval.get("source_file"),
+        "document_type_filter": retrieval.get("document_type"),
+        "rerank_enabled": retrieval.get("rerank_enabled", rerank),
         "top_score": round(top_score, 6),
         "raw_top_score": round(top_score_raw, 6),
         "lexical_confidence": round(lexical_conf, 6),

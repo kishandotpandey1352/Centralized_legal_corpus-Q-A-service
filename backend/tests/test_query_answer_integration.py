@@ -8,11 +8,25 @@ from app.main import app
 def test_query_answer_returns_citation_structure(monkeypatch) -> None:
     question = "Tell me about Colonel Steve McCraw?"
 
-    def fake_retrieve_similar_chunks(db, query: str, top_k: int = 5):
+    def fake_retrieve_similar_chunks(
+        db,
+        query: str,
+        top_k: int = 5,
+        source_file: str | None = None,
+        document_type: str | None = None,
+        rerank: bool = True,
+        candidate_pool_size: int | None = None,
+    ):
         assert query == question
+        assert source_file is None
+        assert document_type is None
         return {
             "query": query,
             "top_k": top_k,
+            "source_file": source_file,
+            "document_type": document_type,
+            "rerank_enabled": rerank,
+            "candidate_pool_size": candidate_pool_size,
             "results": [
                 {
                     "chunk_id": "4f8d02f4-1ceb-42f2-a7a8-786ed832a4db",
