@@ -69,6 +69,60 @@ def _parse_args() -> argparse.Namespace:
         help="Retry count for each case",
     )
     parser.add_argument(
+        "--answer-max-retries",
+        type=int,
+        default=None,
+        help="Optional retry override for answer cases",
+    )
+    parser.add_argument(
+        "--summary-max-retries",
+        type=int,
+        default=None,
+        help="Optional retry override for summary cases",
+    )
+    parser.add_argument(
+        "--connect-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional connect timeout override",
+    )
+    parser.add_argument(
+        "--read-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional read timeout override",
+    )
+    parser.add_argument(
+        "--write-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional write timeout override",
+    )
+    parser.add_argument(
+        "--pool-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional pool timeout override",
+    )
+    parser.add_argument(
+        "--retry-backoff-seconds",
+        type=float,
+        default=0.5,
+        help="Initial backoff delay in seconds between retries",
+    )
+    parser.add_argument(
+        "--retry-backoff-multiplier",
+        type=float,
+        default=2.0,
+        help="Backoff multiplier between retries",
+    )
+    parser.add_argument(
+        "--max-retry-backoff-seconds",
+        type=float,
+        default=5.0,
+        help="Maximum retry backoff in seconds",
+    )
+    parser.add_argument(
         "--stop-on-failure",
         action="store_true",
         help="Stop series immediately if any run fails",
@@ -146,12 +200,30 @@ def main() -> int:
             str(args.timeout_seconds),
             "--max-retries",
             str(args.max_retries),
+            "--retry-backoff-seconds",
+            str(args.retry_backoff_seconds),
+            "--retry-backoff-multiplier",
+            str(args.retry_backoff_multiplier),
+            "--max-retry-backoff-seconds",
+            str(args.max_retry_backoff_seconds),
         ]
 
         if args.answer_timeout_seconds is not None:
             cmd.extend(["--answer-timeout-seconds", str(args.answer_timeout_seconds)])
         if args.summary_timeout_seconds is not None:
             cmd.extend(["--summary-timeout-seconds", str(args.summary_timeout_seconds)])
+        if args.answer_max_retries is not None:
+            cmd.extend(["--answer-max-retries", str(args.answer_max_retries)])
+        if args.summary_max_retries is not None:
+            cmd.extend(["--summary-max-retries", str(args.summary_max_retries)])
+        if args.connect_timeout_seconds is not None:
+            cmd.extend(["--connect-timeout-seconds", str(args.connect_timeout_seconds)])
+        if args.read_timeout_seconds is not None:
+            cmd.extend(["--read-timeout-seconds", str(args.read_timeout_seconds)])
+        if args.write_timeout_seconds is not None:
+            cmd.extend(["--write-timeout-seconds", str(args.write_timeout_seconds)])
+        if args.pool_timeout_seconds is not None:
+            cmd.extend(["--pool-timeout-seconds", str(args.pool_timeout_seconds)])
 
         print(f"[{idx}/{args.runs}] Executing: {' '.join(cmd)}")
         completed = subprocess.run(cmd, cwd=runner_script.parent.parent, check=False)

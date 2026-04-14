@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from statistics import quantiles
 from time import perf_counter
+import time
 from typing import Any
 
 import httpx
@@ -88,6 +89,60 @@ def _parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="Retries for transient request failures (default: 1).",
+    )
+    parser.add_argument(
+        "--answer-max-retries",
+        type=int,
+        default=None,
+        help="Optional retry override for answer cases.",
+    )
+    parser.add_argument(
+        "--summary-max-retries",
+        type=int,
+        default=None,
+        help="Optional retry override for summary cases.",
+    )
+    parser.add_argument(
+        "--connect-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional connect timeout override for all requests.",
+    )
+    parser.add_argument(
+        "--read-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional read timeout override for all requests.",
+    )
+    parser.add_argument(
+        "--write-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional write timeout override for all requests.",
+    )
+    parser.add_argument(
+        "--pool-timeout-seconds",
+        type=float,
+        default=None,
+        help="Optional pool timeout override for all requests.",
+    )
+    parser.add_argument(
+        "--retry-backoff-seconds",
+        type=float,
+        default=0.5,
+        help="Initial backoff delay in seconds between retries (default: 0.5).",
+    )
+    parser.add_argument(
+        "--retry-backoff-multiplier",
+        type=float,
+        default=2.0,
+        help="Backoff multiplier between retries (default: 2.0).",
+    )
+    parser.add_argument(
+        "--max-retry-backoff-seconds",
+        type=float,
+        default=5.0,
+        help="Maximum retry backoff in seconds (default: 5.0).",
     )
     parser.add_argument(
         "--offline",
@@ -225,17 +280,70 @@ def _contains_forbidden_terms(text_value: str, forbidden_terms: tuple[str, ...])
     return any(term.lower() in lowered for term in forbidden_terms)
 
 
+def _build_timeout(
+    *,
+    total_seconds: float,
+    connect_seconds: float | None,
+    read_seconds: float | None,
+    write_seconds: float | None,
+    pool_seconds: float | None,
+) -> httpx.Timeout:
+    if total_seconds <= 0:
+        raise ValueError("timeout_seconds must be > 0")
+    connect_value = connect_seconds if connect_seconds is not None else min(10.0, total_seconds)
+    read_value = read_seconds if read_seconds is not None else total_seconds
+    write_value = write_seconds if write_seconds is not None else total_seconds
+    pool_value = pool_seconds if pool_seconds is not None else total_seconds
+    if min(connect_value, read_value, write_value, pool_value) <= 0:
+        raise ValueError("connect/read/write/pool timeouts must be > 0 when provided")
+    return httpx.Timeout(timeout=total_seconds, connect=connect_value, read=read_value, write=write_value, pool=pool_value)
+
+
+def _is_retryable_exception(exc: httpx.HTTPError) -> bool:
+    return isinstance(
+        exc,
+        (
+            httpx.ConnectError,
+            httpx.ConnectTimeout,
+            httpx.ReadTimeout,
+            httpx.WriteTimeout,
+            httpx.PoolTimeout,
+            httpx.RemoteProtocolError,
+        ),
+    )
+
+
+def _retry_backoff_seconds(
+    *,
+    attempt_number: int,
+    base_seconds: float,
+    multiplier: float,
+    max_seconds: float,
+) -> float:
+    if attempt_number <= 0:
+        return 0.0
+    raw = base_seconds * (multiplier ** (attempt_number - 1))
+    return max(0.0, min(raw, max_seconds))
+
+
 def _run_case(
     client: httpx.Client,
     api_base_url: str,
     case: GoldenCase,
-    timeout_seconds: float,
+    timeout: httpx.Timeout,
     max_retries: int,
+    retry_backoff_seconds: float,
+    retry_backoff_multiplier: float,
+    max_retry_backoff_seconds: float,
 ) -> dict[str, Any]:
-    if timeout_seconds < 0:
-        raise ValueError("timeout_seconds must be non-negative")
     if max_retries < 0:
         raise ValueError("max_retries must be non-negative")
+    if retry_backoff_seconds < 0:
+        raise ValueError("retry_backoff_seconds must be non-negative")
+    if retry_backoff_multiplier < 1:
+        raise ValueError("retry_backoff_multiplier must be >= 1")
+    if max_retry_backoff_seconds < 0:
+        raise ValueError("max_retry_backoff_seconds must be non-negative")
 
     if case.kind == "answer":
         endpoint = f"{api_base_url.rstrip('/')}/query/answer"
@@ -254,14 +362,23 @@ def _run_case(
         attempt_count = attempt + 1
         start = perf_counter()
         try:
-            response = client.post(endpoint, json=request_payload, timeout=timeout_seconds)
+            response = client.post(endpoint, json=request_payload, timeout=timeout)
             attempt_latency = int((perf_counter() - start) * 1000)
             total_latency_ms += attempt_latency
         except httpx.HTTPError as exc:
             attempt_latency = int((perf_counter() - start) * 1000)
             total_latency_ms += attempt_latency
             attempt_errors.append(f"attempt-{attempt_count}: {exc}")
-            if attempt < max_retries:
+            retryable_exception = _is_retryable_exception(exc)
+            if retryable_exception and attempt < max_retries:
+                backoff = _retry_backoff_seconds(
+                    attempt_number=attempt_count,
+                    base_seconds=retry_backoff_seconds,
+                    multiplier=retry_backoff_multiplier,
+                    max_seconds=max_retry_backoff_seconds,
+                )
+                if backoff > 0:
+                    time.sleep(backoff)
                 continue
             return {
                 "case_id": case.case_id,
@@ -302,6 +419,14 @@ def _run_case(
 
         if response.status_code in retryable_status_codes and attempt < max_retries:
             attempt_errors.append(f"attempt-{attempt_count}: retryable-status-{response.status_code}")
+            backoff = _retry_backoff_seconds(
+                attempt_number=attempt_count,
+                base_seconds=retry_backoff_seconds,
+                multiplier=retry_backoff_multiplier,
+                max_seconds=max_retry_backoff_seconds,
+            )
+            if backoff > 0:
+                time.sleep(backoff)
             continue
 
         break
@@ -688,12 +813,32 @@ def main() -> int:
     case_results: list[dict[str, Any]] = []
     eval_source = "api"
     with httpx.Client() as client:
+        score_timeout = _build_timeout(
+            total_seconds=args.timeout_seconds,
+            connect_seconds=args.connect_timeout_seconds,
+            read_seconds=args.read_timeout_seconds,
+            write_seconds=args.write_timeout_seconds,
+            pool_seconds=args.pool_timeout_seconds,
+        )
         for case in cases:
             case_timeout_seconds = args.timeout_seconds
+            case_max_retries = args.max_retries
             if case.kind == "answer" and args.answer_timeout_seconds is not None:
                 case_timeout_seconds = args.answer_timeout_seconds
+            if case.kind == "answer" and args.answer_max_retries is not None:
+                case_max_retries = args.answer_max_retries
             if case.kind == "summary" and args.summary_timeout_seconds is not None:
                 case_timeout_seconds = args.summary_timeout_seconds
+            if case.kind == "summary" and args.summary_max_retries is not None:
+                case_max_retries = args.summary_max_retries
+
+            case_timeout = _build_timeout(
+                total_seconds=case_timeout_seconds,
+                connect_seconds=args.connect_timeout_seconds,
+                read_seconds=args.read_timeout_seconds,
+                write_seconds=args.write_timeout_seconds,
+                pool_seconds=args.pool_timeout_seconds,
+            )
 
             if args.offline:
                 case_results.append(_run_case_offline(case))
@@ -703,8 +848,11 @@ def main() -> int:
                         client=client,
                         api_base_url=args.api_base_url,
                         case=case,
-                        timeout_seconds=case_timeout_seconds,
-                        max_retries=args.max_retries,
+                        timeout=case_timeout,
+                        max_retries=case_max_retries,
+                        retry_backoff_seconds=args.retry_backoff_seconds,
+                        retry_backoff_multiplier=args.retry_backoff_multiplier,
+                        max_retry_backoff_seconds=args.max_retry_backoff_seconds,
                     )
                 )
 
@@ -728,7 +876,7 @@ def main() -> int:
                 score_response = client.post(
                     f"{args.api_base_url.rstrip('/')}/eval/score",
                     json=score_input,
-                    timeout=args.timeout_seconds,
+                    timeout=score_timeout,
                 )
                 score_response.raise_for_status()
                 score_payload = score_response.json()
@@ -750,7 +898,7 @@ def main() -> int:
                     compare_response = client.post(
                         f"{args.api_base_url.rstrip('/')}/eval/compare",
                         json=compare_input,
-                        timeout=args.timeout_seconds,
+                        timeout=score_timeout,
                     )
                     compare_response.raise_for_status()
                     compare_payload = compare_response.json()
@@ -775,6 +923,21 @@ def main() -> int:
             "abstention_labeled_cases": challenger_metrics["proxy_components"]["abstention_labeled_cases"],
             "abstention_matches": challenger_metrics["proxy_components"]["abstention_matches"],
             "abstention_accuracy": challenger_metrics["abstention_accuracy"],
+        },
+        "runtime_controls": {
+            "timeout_seconds": args.timeout_seconds,
+            "answer_timeout_seconds": args.answer_timeout_seconds,
+            "summary_timeout_seconds": args.summary_timeout_seconds,
+            "max_retries": args.max_retries,
+            "answer_max_retries": args.answer_max_retries,
+            "summary_max_retries": args.summary_max_retries,
+            "connect_timeout_seconds": args.connect_timeout_seconds,
+            "read_timeout_seconds": args.read_timeout_seconds,
+            "write_timeout_seconds": args.write_timeout_seconds,
+            "pool_timeout_seconds": args.pool_timeout_seconds,
+            "retry_backoff_seconds": args.retry_backoff_seconds,
+            "retry_backoff_multiplier": args.retry_backoff_multiplier,
+            "max_retry_backoff_seconds": args.max_retry_backoff_seconds,
         },
         "case_results": case_results,
         "challenger_metrics": challenger_metrics,

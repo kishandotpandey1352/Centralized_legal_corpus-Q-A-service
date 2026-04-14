@@ -381,6 +381,37 @@ Current strict CI thresholds:
 1. Smoke: `winner_rate >= 0.60`, `passing_rate = 1.00`, fail-fast enabled.
 2. Full: `winner_rate >= 0.70`, `passing_rate = 1.00`, fail-fast enabled.
 
+## Day 10 status (live-run stability hardening)
+
+Implemented:
+1. Retry behavior hardening in `backend/scripts/eval_runner.py`:
+    - Retry only transient transport failures and retryable HTTP status codes (`429`, `500`, `502`, `503`, `504`).
+    - Exponential retry backoff controls.
+2. Separate runtime controls for answer vs summary runs:
+    - `--answer-timeout-seconds`, `--summary-timeout-seconds`
+    - `--answer-max-retries`, `--summary-max-retries`
+3. Structured HTTP timeout controls:
+    - `--connect-timeout-seconds`, `--read-timeout-seconds`, `--write-timeout-seconds`, `--pool-timeout-seconds`
+4. Runtime-control snapshot persisted in each run artifact under `runtime_controls` for debugging and reproducibility.
+
+Run Day 10 hardened smoke validation (from `backend/`):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 20 --summary-timeout-seconds 45 --answer-max-retries 2 --summary-max-retries 1 --connect-timeout-seconds 5 --read-timeout-seconds 45 --write-timeout-seconds 10 --pool-timeout-seconds 10 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 4
+```
+
+Run Day 10 hardened full validation (from `backend/`):
+
+```bat
+python scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+Run repeated Day 10 stability series (from `backend/`):
+
+```bat
+python scripts\eval_series.py --api-base-url http://localhost:8000 --cases ..\mvp\golden_set_smoke.json --baseline ..\mvp\experiments\baseline_metrics.json --runs 5 --answer-timeout-seconds 20 --summary-timeout-seconds 45 --answer-max-retries 2 --summary-max-retries 1 --connect-timeout-seconds 5 --read-timeout-seconds 45 --write-timeout-seconds 10 --pool-timeout-seconds 10 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 4 --stop-on-failure --require-winner-rate 0.60 --require-passing-rate 1.00
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
