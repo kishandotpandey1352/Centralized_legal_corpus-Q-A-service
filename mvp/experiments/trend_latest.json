@@ -1,0 +1,273 @@
+{
+  "run_count": 18,
+  "pass_count": 5,
+  "fail_count": 13,
+  "pass_rate": 0.2778,
+  "latest_run_id": "20260414_205030_826748",
+  "latest": {
+    "overall_score": 0.8843,
+    "latency_p95_ms": 1,
+    "invalid_citation_rate": 0.0,
+    "abstention_accuracy": 1.0,
+    "failed_cases": 0
+  },
+  "deltas_vs_previous": {
+    "overall_score": 0.025,
+    "latency_p95_ms": -6764.0,
+    "invalid_citation_rate": 0.0,
+    "abstention_accuracy": 0.25
+  },
+  "moving_averages": {
+    "overall_score_last_5": 0.8679,
+    "latency_p95_ms_last_5": 8217.6,
+    "invalid_citation_rate_last_5": 0.0,
+    "abstention_accuracy_last_5": 0.8928
+  },
+  "top_failure_issues": [
+    {
+      "issue": "summary_structure_invalid",
+      "count": 2
+    }
+  ],
+  "series": [
+    {
+      "run_id": "20260412_142535_167754",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260412_142535_167754.json",
+      "eval_source": "api",
+      "pass_fail": "pass",
+      "overall_score": 0.9104,
+      "latency_p95_ms": 2224,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.75,
+      "failed_cases": 8,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260412_142545_765293",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260412_142545_765293.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8464,
+      "latency_p95_ms": 9894,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.7826,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260412_142649_945398",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260412_142649_945398.json",
+      "eval_source": "offline-local",
+      "pass_fail": "pass",
+      "overall_score": 0.8799,
+      "latency_p95_ms": 1,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 1.0,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260412_142656_682701",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260412_142656_682701.json",
+      "eval_source": "offline-local",
+      "pass_fail": "pass",
+      "overall_score": 0.8799,
+      "latency_p95_ms": 1,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 1.0,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_040447_380863",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_040447_380863.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8606,
+      "latency_p95_ms": 14041,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.8571,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_040450_062364",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_040450_062364.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8718,
+      "latency_p95_ms": 11950,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.875,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_040549_935911",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_040549_935911.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8508,
+      "latency_p95_ms": 5312,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.7917,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_040635_015322",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_040635_015322.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8508,
+      "latency_p95_ms": 5391,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.7917,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_075856_194013",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_075856_194013.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8718,
+      "latency_p95_ms": 26958,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.875,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_075910_513128",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_075910_513128.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8718,
+      "latency_p95_ms": 5447,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.875,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_084516_221180",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_084516_221180.json",
+      "eval_source": "offline-local",
+      "pass_fail": "pass",
+      "overall_score": 0.8843,
+      "latency_p95_ms": 1,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 1.0,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_110359_926580",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_110359_926580.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8464,
+      "latency_p95_ms": 7363,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.7826,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_181535_748757",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_181535_748757.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8696,
+      "latency_p95_ms": 25357,
+      "invalid_citation_rate": 0.0435,
+      "abstention_accuracy": 0.875,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_181848_366905",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_181848_366905.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8749,
+      "latency_p95_ms": 10802,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 1.0,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_182039_271653",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_182039_271653.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8606,
+      "latency_p95_ms": 10480,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.8571,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_201823_964040",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_201823_964040.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8606,
+      "latency_p95_ms": 13040,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.8571,
+      "failed_cases": 1,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_202549_303012",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_202549_303012.json",
+      "eval_source": "api",
+      "pass_fail": "fail",
+      "overall_score": 0.8593,
+      "latency_p95_ms": 6765,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 0.75,
+      "failed_cases": 0,
+      "success_rate": null,
+      "top_non_pass_issues": []
+    },
+    {
+      "run_id": "20260414_205030_826748",
+      "run_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260414_205030_826748.json",
+      "eval_source": "offline-local",
+      "pass_fail": "pass",
+      "overall_score": 0.8843,
+      "latency_p95_ms": 1,
+      "invalid_citation_rate": 0.0,
+      "abstention_accuracy": 1.0,
+      "failed_cases": 0,
+      "success_rate": 1.0,
+      "top_non_pass_issues": [
+        {
+          "issue": "summary_structure_invalid",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

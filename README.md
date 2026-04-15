@@ -8,6 +8,33 @@ Day 1 setup is complete for the backend skeleton, dependencies, local pgvector d
 - `data/sample_docs/` initial legal test document
 - `mvp/` planning and evaluation templates
 
+## Frontend MVP (Angular)
+
+Implemented UI panels:
+1. Query retrieval
+2. Answer with citations
+3. Summary view
+4. Run-history panel (browser local storage)
+
+Run frontend from project root:
+
+```bat
+cd frontend
+npm install
+npm start
+```
+
+Frontend URL:
+- `http://localhost:4200`
+
+Backend requirement:
+- Keep API running on `http://localhost:8000`.
+
+The Angular dev server uses `frontend/proxy.conf.json` so API calls under `/query`, `/summary`, `/eval`, and `/ingest` are proxied to the backend.
+
+Full frontend documentation is in:
+- `README_FRONTEND.md`
+
 ## Day 1 Quick Start
 
 ### 1. Start PostgreSQL with pgvector
@@ -669,6 +696,54 @@ Equivalent command format kept for convenience:
 
 ```bat
 python -m pytest tests\test_qa_fallback.py tests\test_llm_prompt.py tests\test_query_summary_integration.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
+```
+
+## Day 17 status (observability and diagnostics)
+
+Implemented:
+1. Per-case failure taxonomy in `backend/scripts/eval_runner.py`:
+        - Each case now includes `failure_taxonomy` with:
+            - `primary_issue`
+            - `issues`
+            - `issue_count`
+            - `severity`
+        - Taxonomy captures transport/runtime failures and quality-check failures (mode, abstention, citation, summary drift/structure, content expectation).
+2. Better run-level analytics in eval artifacts:
+        - New `run_analytics` block in each `run_*.json` with:
+            - success/failure rates
+            - latency mean/median/p95
+            - issue distributions (`primary_issue_counts`, `issue_counts`, `top_non_pass_issues`)
+            - `check_failure_counts`
+            - `mode_counts`
+            - per-kind breakdown with success and latency stats.
+3. Trend reports from historical runs:
+        - New script: `backend/scripts/eval_trends.py`
+        - Produces:
+            - `trend_latest.json`
+            - `trend_latest.md`
+        - Includes pass-rate trend, latest-vs-previous deltas, moving averages, and top recurring failure issues.
+4. Tests added:
+        - `backend/tests/test_eval_observability.py`
+        - Covers taxonomy classification, analytics aggregation, and trend-report calculations.
+
+Commands used for Day 17:
+
+1. Run Day 17 observability tests:
+
+```bat
+.venv\Scripts\python.exe -m pytest tests\test_eval_observability.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
+```
+
+2. Run smoke eval to produce fresh diagnostics artifact:
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+3. Build trend report over latest runs:
+
+```bat
+.venv\Scripts\python.exe scripts\eval_trends.py --runs-dir ..\mvp\experiments --limit 20
 ```
 
 ## External embedding model setup (download + usage)

@@ -1,0 +1,750 @@
+{
+  "run_id": "20260414_205030_826748",
+  "api_base_url": "http://localhost:8000",
+  "cases_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_smoke.json",
+  "eval_source": "offline-local",
+  "summary": {
+    "total_cases": 8,
+    "successful_cases": 8,
+    "failed_cases": 0,
+    "abstention_labeled_cases": 8,
+    "abstention_matches": 8,
+    "abstention_accuracy": 1.0
+  },
+  "runtime_controls": {
+    "timeout_seconds": 90.0,
+    "answer_timeout_seconds": null,
+    "summary_timeout_seconds": null,
+    "max_retries": 1,
+    "answer_max_retries": null,
+    "summary_max_retries": null,
+    "connect_timeout_seconds": null,
+    "read_timeout_seconds": null,
+    "write_timeout_seconds": null,
+    "pool_timeout_seconds": null,
+    "retry_backoff_seconds": 0.5,
+    "retry_backoff_multiplier": 2.0,
+    "max_retry_backoff_seconds": 5.0
+  },
+  "case_results": [
+    {
+      "case_id": "A1",
+      "kind": "answer",
+      "category": "direct_lookup",
+      "request": {
+        "question": "What is the cure period for material breach?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "cure",
+        "breach"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke direct lookup",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "cure [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    },
+    {
+      "case_id": "A2",
+      "kind": "answer",
+      "category": "multi_chunk_synthesis",
+      "request": {
+        "question": "Which document mentions a time extension request and what is requested?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "time extension",
+        "requested"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.85,
+        "answer_correctness": 0.8
+      },
+      "notes": "Smoke synthesis",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "time extension [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    },
+    {
+      "case_id": "A3",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "What is the moon made of according to these legal documents?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "moon is"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    },
+    {
+      "case_id": "A5",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Answer with grounded evidence only: what cure period is mentioned before termination?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "cure"
+      ],
+      "expected_not_contains_any": [
+        "I think",
+        "probably"
+      ],
+      "human_scores": {
+        "faithfulness": 0.92,
+        "answer_correctness": 0.9
+      },
+      "notes": "Smoke citation sensitivity",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 1,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 1,
+        "mode": "evidence-direct"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    },
+    {
+      "case_id": "S1",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 1,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]"
+      ],
+      "expected_not_contains_any": [
+        "Insufficient evidence"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary grounded",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 3,
+      "citation_count": 1,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true,
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": true,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 1,
+        "summary_word_count": 2
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "summary_quality": {
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": true,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 1,
+        "summary_word_count": 2
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm-summary"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "summary_structure_invalid",
+        "issues": [
+          "summary_structure_invalid"
+        ],
+        "issue_count": 1,
+        "severity": "fail"
+      }
+    },
+    {
+      "case_id": "S3",
+      "kind": "summary",
+      "category": "summary_grounded",
+      "request": {
+        "question": null,
+        "source_file": "sample_service_agreement.txt",
+        "top_k": 5,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]"
+      ],
+      "expected_not_contains_any": [
+        "-"
+      ],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Smoke summary citation density",
+      "status_code": 200,
+      "ok": true,
+      "mode": "llm-summary",
+      "used_chunks": 3,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true,
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": true,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 1,
+        "summary_word_count": 2
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "summary_quality": {
+        "summary_source_alignment": true,
+        "summary_verbosity_ok": true,
+        "summary_structure_ok": false,
+        "summary_sentence_count": 1,
+        "summary_word_count": 2
+      },
+      "response": {
+        "summary": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 3,
+        "mode": "llm-summary"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "summary_structure_invalid",
+        "issues": [
+          "summary_structure_invalid"
+        ],
+        "issue_count": 1,
+        "severity": "fail"
+      }
+    },
+    {
+      "case_id": "A14",
+      "kind": "answer",
+      "category": "abstention",
+      "request": {
+        "question": "Which clause defines cryptocurrency escrow percentages in this corpus?",
+        "source_file": null,
+        "top_k": 3,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "Insufficient evidence"
+      ],
+      "expected_not_contains_any": [
+        "cryptocurrency"
+      ],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Smoke abstention variant",
+      "status_code": 200,
+      "ok": true,
+      "mode": "low-confidence",
+      "used_chunks": 1,
+      "citation_count": 0,
+      "invalid_citation_count": 0,
+      "abstained": true,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "Insufficient evidence in provided documents.",
+        "citations": [],
+        "used_chunks": 1,
+        "mode": "low-confidence"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    },
+    {
+      "case_id": "A16",
+      "kind": "answer",
+      "category": "citation_sensitivity",
+      "request": {
+        "question": "Ground your answer with citations: what does the agreement state before termination can occur?",
+        "source_file": null,
+        "top_k": 4,
+        "max_chunks": 6
+      },
+      "latency_ms": 1,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": [
+        "[C1]",
+        "[C2]",
+        "termination"
+      ],
+      "expected_not_contains_any": [
+        "guess"
+      ],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Smoke citation control",
+      "status_code": 200,
+      "ok": true,
+      "mode": "evidence-direct",
+      "used_chunks": 2,
+      "citation_count": 2,
+      "invalid_citation_count": 0,
+      "abstained": false,
+      "checks": {
+        "mode_match": true,
+        "citation_requirement_met": true,
+        "inline_citation_requirement_met": true,
+        "valid_citation_requirement_met": true,
+        "citation_sequence_valid": true,
+        "inline_citations_resolved": true,
+        "missing_inline_citations": false,
+        "abstention_match": true,
+        "contains_expected_terms": true,
+        "contains_forbidden_terms": false,
+        "content_expectation_passed": true
+      },
+      "citation_validation": {
+        "inline_ids": [
+          "C1"
+        ],
+        "unresolved_inline_ids": [],
+        "invalid_structural_count": 0,
+        "missing_inline_citations": false,
+        "citation_sequence_valid": true
+      },
+      "response": {
+        "answer": "[C1] [C1]",
+        "citations": [
+          {
+            "id": "C1",
+            "source_file": "sample_service_agreement.txt"
+          },
+          {
+            "id": "C2",
+            "source_file": "sample_service_agreement.txt"
+          }
+        ],
+        "used_chunks": 2,
+        "mode": "evidence-direct"
+      },
+      "failure_taxonomy": {
+        "primary_issue": "none",
+        "issues": [
+          "none"
+        ],
+        "issue_count": 0,
+        "severity": "pass"
+      }
+    }
+  ],
+  "challenger_metrics": {
+    "faithfulness": 0.9163,
+    "answer_correctness": 0.8925,
+    "retrieval_recall_at_5": 0.75,
+    "abstention_accuracy": 1.0,
+    "hallucination_rate": 0.0,
+    "invalid_citation_rate": 0.0,
+    "latency_p95_ms": 1,
+    "proxy_components": {
+      "faithfulness_proxy": 0.75,
+      "answer_correctness_proxy": 1.0,
+      "human_faithfulness_count": 8,
+      "human_correctness_count": 8,
+      "abstention_labeled_cases": 8,
+      "abstention_matches": 8
+    },
+    "notes": [
+      "Metrics are proxy estimates; replace with human-graded correctness/faithfulness for production benchmarking.",
+      "Faithfulness uses human_scores labels where present; proxy used for unlabeled cases.",
+      "Answer correctness uses human_scores labels where present; proxy used for unlabeled cases."
+    ]
+  },
+  "run_analytics": {
+    "total_cases": 8,
+    "successful_cases": 8,
+    "failed_cases": 0,
+    "success_rate": 1.0,
+    "latency_ms_mean": 1.0,
+    "latency_ms_median": 1.0,
+    "latency_ms_p95": 1,
+    "failure_taxonomy": {
+      "primary_issue_counts": {
+        "none": 6,
+        "summary_structure_invalid": 2
+      },
+      "issue_counts": {
+        "none": 6,
+        "summary_structure_invalid": 2
+      },
+      "top_non_pass_issues": [
+        {
+          "issue": "summary_structure_invalid",
+          "count": 2
+        }
+      ]
+    },
+    "check_failure_counts": {
+      "contains_forbidden_terms": 8,
+      "missing_inline_citations": 8,
+      "summary_structure_ok": 2
+    },
+    "mode_counts": {
+      "evidence-direct": 4,
+      "llm-summary": 2,
+      "low-confidence": 2
+    },
+    "kind_breakdown": {
+      "answer": {
+        "count": 6,
+        "ok_count": 6,
+        "failed_count": 0,
+        "success_rate": 1.0,
+        "latency_ms_mean": 1.0,
+        "latency_ms_p95": 1
+      },
+      "summary": {
+        "count": 2,
+        "ok_count": 2,
+        "failed_count": 0,
+        "success_rate": 1.0,
+        "latency_ms_mean": 1.0,
+        "latency_ms_p95": 1
+      }
+    }
+  },
+  "score": {
+    "overall_score": 0.8843,
+    "latency_penalty": 0.0,
+    "gates": {
+      "faithfulness": true,
+      "answer_correctness": true,
+      "retrieval_recall_at_5": true,
+      "hallucination_rate": true,
+      "invalid_citation_rate": true,
+      "latency_p95_ms": true
+    },
+    "pass_fail": "pass"
+  },
+  "compare": null
+}

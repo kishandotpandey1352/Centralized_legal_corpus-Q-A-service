@@ -445,7 +445,7 @@ def _run_case(
                 if backoff > 0:
                     time.sleep(backoff)
                 continue
-            return {
+            result = {
                 "case_id": case.case_id,
                 "kind": case.kind,
                 "category": case.category,
@@ -481,6 +481,8 @@ def _run_case(
                     "content_expectation_passed": None,
                 },
             }
+            result["failure_taxonomy"] = _build_failure_taxonomy(result)
+            return result
 
         if response.status_code in retryable_status_codes and attempt < max_retries:
             attempt_errors.append(f"attempt-{attempt_count}: retryable-status-{response.status_code}")
@@ -497,7 +499,7 @@ def _run_case(
         break
 
     if response is None:
-        return {
+        result = {
             "case_id": case.case_id,
             "kind": case.kind,
             "category": case.category,
@@ -533,6 +535,8 @@ def _run_case(
                 "content_expectation_passed": None,
             },
         }
+        result["failure_taxonomy"] = _build_failure_taxonomy(result)
+        return result
 
     record: dict[str, Any] = {
         "case_id": case.case_id,
@@ -574,6 +578,7 @@ def _run_case(
                 "abstained": None,
             }
         )
+        record["failure_taxonomy"] = _build_failure_taxonomy(record)
         return record
 
     body = response.json()
@@ -659,6 +664,7 @@ def _run_case(
             "response": body,
         }
     )
+    record["failure_taxonomy"] = _build_failure_taxonomy(record)
     return record
 
 
@@ -714,7 +720,7 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
             "summary_word_count": word_count,
         }
 
-    return {
+    result = {
         "case_id": case.case_id,
         "kind": case.kind,
         "category": case.category,
@@ -767,6 +773,8 @@ def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
         **({"summary_quality": summary_quality} if summary_quality is not None else {}),
         "response": response_payload,
     }
+    result["failure_taxonomy"] = _build_failure_taxonomy(result)
+    return result
 
 
 def _p95(values: list[int]) -> int:
@@ -775,6 +783,171 @@ def _p95(values: list[int]) -> int:
     if len(values) == 1:
         return values[0]
     return int(round(quantiles(values, n=100, method="inclusive")[94]))
+
+def _mean(values: list[int]) -> float:
+    if not values:
+        return 0.0
+    return float(sum(values) / len(values))
+
+def _median(values: list[int]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return float(ordered[mid])
+    return float((ordered[mid - 1] + ordered[mid]) / 2)
+
+def _build_failure_taxonomy(case_result: dict[str, Any]) -> dict[str, Any]:
+    issues: list[str] = []
+    checks = case_result.get("checks") if isinstance(case_result.get("checks"), dict) else {}
+    mode = str(case_result.get("mode") or "").strip().lower()
+    error_text = str(case_result.get("error") or "").strip().lower()
+    ok = bool(case_result.get("ok"))
+
+    if not ok:
+        if mode == "request-error" or error_text.startswith("request-error"):
+            issues.append("request_error")
+        elif mode == "http-error":
+            issues.append("http_error")
+        else:
+            issues.append("runtime_error")
+
+    if checks:
+        if checks.get("mode_match") is False:
+            issues.append("mode_mismatch")
+        if checks.get("abstention_match") is False:
+            issues.append("abstention_mismatch")
+        if checks.get("citation_requirement_met") is False:
+            issues.append("citation_requirement_not_met")
+        if checks.get("inline_citation_requirement_met") is False:
+            issues.append("inline_citation_requirement_not_met")
+        if checks.get("valid_citation_requirement_met") is False:
+            issues.append("invalid_citation_detected")
+        if checks.get("citation_sequence_valid") is False:
+            issues.append("citation_sequence_invalid")
+        if checks.get("inline_citations_resolved") is False:
+            issues.append("unresolved_inline_citations")
+        if checks.get("missing_inline_citations") is True:
+            issues.append("missing_inline_citations")
+        if checks.get("contains_forbidden_terms") is True:
+            issues.append("forbidden_terms_present")
+        if checks.get("content_expectation_passed") is False:
+            issues.append("content_expectation_failed")
+        if checks.get("summary_source_alignment") is False:
+            issues.append("summary_source_misaligned")
+        if checks.get("summary_verbosity_ok") is False:
+            issues.append("summary_verbosity_drift")
+        if checks.get("summary_structure_ok") is False:
+            issues.append("summary_structure_invalid")
+
+    ordered_unique: list[str] = []
+    for issue in issues:
+        if issue not in ordered_unique:
+            ordered_unique.append(issue)
+
+    if not ordered_unique:
+        ordered_unique = ["none"]
+
+    return {
+        "primary_issue": ordered_unique[0],
+        "issues": ordered_unique,
+        "issue_count": len([item for item in ordered_unique if item != "none"]),
+        "severity": "pass" if ordered_unique == ["none"] else "fail",
+    }
+
+def _compute_run_analytics(case_results: list[dict[str, Any]]) -> dict[str, Any]:
+    total = len(case_results)
+    successful = [item for item in case_results if item.get("ok")]
+    failed = [item for item in case_results if not item.get("ok")]
+
+    issue_counts: dict[str, int] = {}
+    primary_issue_counts: dict[str, int] = {}
+    check_failure_counts: dict[str, int] = {}
+    mode_counts: dict[str, int] = {}
+    kind_stats: dict[str, dict[str, Any]] = {}
+
+    latencies_all: list[int] = []
+    for item in case_results:
+        latency_value = int(item.get("latency_ms", 0) or 0)
+        if latency_value > 0:
+            latencies_all.append(latency_value)
+
+        mode_value = str(item.get("mode") or "unknown")
+        mode_counts[mode_value] = mode_counts.get(mode_value, 0) + 1
+
+        kind_value = str(item.get("kind") or "unknown")
+        if kind_value not in kind_stats:
+            kind_stats[kind_value] = {
+                "count": 0,
+                "ok_count": 0,
+                "failed_count": 0,
+                "latencies_ms": [],
+            }
+        kind_bucket = kind_stats[kind_value]
+        kind_bucket["count"] += 1
+        if item.get("ok"):
+            kind_bucket["ok_count"] += 1
+        else:
+            kind_bucket["failed_count"] += 1
+        if latency_value > 0:
+            kind_bucket["latencies_ms"].append(latency_value)
+
+        taxonomy = item.get("failure_taxonomy") if isinstance(item.get("failure_taxonomy"), dict) else None
+        if taxonomy is None:
+            taxonomy = _build_failure_taxonomy(item)
+
+        primary_issue = str(taxonomy.get("primary_issue", "none"))
+        primary_issue_counts[primary_issue] = primary_issue_counts.get(primary_issue, 0) + 1
+
+        for issue in taxonomy.get("issues", []):
+            issue_text = str(issue)
+            issue_counts[issue_text] = issue_counts.get(issue_text, 0) + 1
+
+        checks = item.get("checks") if isinstance(item.get("checks"), dict) else {}
+        for key, value in checks.items():
+            if value is False:
+                check_failure_counts[key] = check_failure_counts.get(key, 0) + 1
+
+    kind_breakdown: dict[str, Any] = {}
+    for kind_name, bucket in kind_stats.items():
+        latencies = [int(v) for v in bucket.get("latencies_ms", [])]
+        kind_breakdown[kind_name] = {
+            "count": bucket["count"],
+            "ok_count": bucket["ok_count"],
+            "failed_count": bucket["failed_count"],
+            "success_rate": round((bucket["ok_count"] / bucket["count"]) if bucket["count"] else 0.0, 4),
+            "latency_ms_mean": round(_mean(latencies), 2) if latencies else 0.0,
+            "latency_ms_p95": _p95(latencies) if latencies else 0,
+        }
+
+    return {
+        "total_cases": total,
+        "successful_cases": len(successful),
+        "failed_cases": len(failed),
+        "success_rate": round((len(successful) / total) if total else 0.0, 4),
+        "latency_ms_mean": round(_mean(latencies_all), 2) if latencies_all else 0.0,
+        "latency_ms_median": round(_median(latencies_all), 2) if latencies_all else 0.0,
+        "latency_ms_p95": _p95(latencies_all) if latencies_all else 0,
+        "failure_taxonomy": {
+            "primary_issue_counts": dict(sorted(primary_issue_counts.items(), key=lambda item: item[0])),
+            "issue_counts": dict(sorted(issue_counts.items(), key=lambda item: item[0])),
+            "top_non_pass_issues": [
+                {
+                    "issue": issue,
+                    "count": count,
+                }
+                for issue, count in sorted(
+                    [(k, v) for k, v in issue_counts.items() if k != "none"],
+                    key=lambda item: item[1],
+                    reverse=True,
+                )[:5]
+            ],
+        },
+        "check_failure_counts": dict(sorted(check_failure_counts.items(), key=lambda item: item[0])),
+        "mode_counts": dict(sorted(mode_counts.items(), key=lambda item: item[0])),
+        "kind_breakdown": kind_breakdown,
+    }
 
 
 def _compute_proxy_metrics(case_results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -912,6 +1085,22 @@ def _write_outputs(output_dir: Path, report: dict[str, Any]) -> tuple[Path, Path
     lines.append("- citation counts and validity: captured as citation_count and invalid_citation_count")
     lines.append("- abstention accuracy behavior: captured per case in checks.abstention_match and aggregated in proxy_components")
 
+    run_analytics = report.get("run_analytics") if isinstance(report.get("run_analytics"), dict) else {}
+    if run_analytics:
+        lines.extend(["", "## Run Analytics", ""])
+        lines.append(f"- success_rate: {run_analytics.get('success_rate')}")
+        lines.append(f"- latency_ms_mean: {run_analytics.get('latency_ms_mean')}")
+        lines.append(f"- latency_ms_median: {run_analytics.get('latency_ms_median')}")
+        lines.append(f"- latency_ms_p95: {run_analytics.get('latency_ms_p95')}")
+
+        failure_taxonomy = run_analytics.get("failure_taxonomy") if isinstance(run_analytics.get("failure_taxonomy"), dict) else {}
+        top_issues = failure_taxonomy.get("top_non_pass_issues") if isinstance(failure_taxonomy.get("top_non_pass_issues"), list) else []
+        if top_issues:
+            lines.append("- top_failure_issues:")
+            for issue in top_issues:
+                if isinstance(issue, dict):
+                    lines.append(f"  - {issue.get('issue')}: {issue.get('count')}")
+
     lines.extend(["", "## Notes", ""])
     for note in report["challenger_metrics"].get("notes", []):
         lines.append(f"- {note}")
@@ -1040,6 +1229,7 @@ def main() -> int:
                     )
 
     run_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")
+    run_analytics = _compute_run_analytics(case_results)
 
     report: dict[str, Any] = {
         "run_id": run_id,
@@ -1071,6 +1261,7 @@ def main() -> int:
         },
         "case_results": case_results,
         "challenger_metrics": challenger_metrics,
+        "run_analytics": run_analytics,
         "score": score_payload,
         "compare": compare_payload,
     }
