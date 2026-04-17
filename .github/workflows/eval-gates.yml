@@ -1,5 +1,9 @@
 name: Eval Gates
 
+concurrency:
+  group: eval-gates-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     branches:
@@ -41,8 +45,8 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.suite == 'smoke' || github.event.inputs.suite == 'both')) }}
     runs-on: ubuntu-latest
     env:
-      API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.EVAL_API_BASE_URL || 'http://localhost:8000' }}
-      SMOKE_RUNS: ${{ github.event.inputs.smoke_runs || '2' }}
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://localhost:8000' }}
+      SMOKE_RUNS: ${{ github.event.inputs.smoke_runs || '3' }}
     defaults:
       run:
         working-directory: backend
@@ -81,12 +85,14 @@ jobs:
             mvp/experiments/pr_smoke/run_*.json
             mvp/experiments/pr_smoke/run_*.md
             mvp/experiments/pr_smoke/series_latest.json
+          retention-days: 14
+          if-no-files-found: error
 
   full-nightly:
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.suite == 'full' || github.event.inputs.suite == 'both')) }}
     runs-on: ubuntu-latest
     env:
-      API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.EVAL_API_BASE_URL || 'http://localhost:8000' }}
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://localhost:8000' }}
       FULL_RUNS: ${{ github.event.inputs.full_runs || '2' }}
     defaults:
       run:
@@ -149,3 +155,5 @@ jobs:
             mvp/experiments/nightly_full/run_*.json
             mvp/experiments/nightly_full/run_*.md
             mvp/experiments/nightly_full/series_latest.json
+          retention-days: 30
+          if-no-files-found: error

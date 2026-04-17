@@ -746,6 +746,48 @@ Commands used for Day 17:
 .venv\Scripts\python.exe scripts\eval_trends.py --runs-dir ..\mvp\experiments --limit 20
 ```
 
+## Day 18 status (CI/CD integration)
+
+Implemented:
+1. Trigger wiring in `.github/workflows/eval-gates.yml`:
+    - PR trigger runs smoke gates only (`smoke-pr` job).
+    - Scheduled nightly trigger runs full gates only (`full-nightly` job).
+    - Manual dispatch supports `suite=smoke|full|both` for controlled reruns.
+2. Artifact retention policy:
+    - PR smoke artifacts retained for 14 days.
+    - Nightly full artifacts retained for 30 days.
+    - Upload step fails if expected artifacts are missing (`if-no-files-found: error`).
+3. CI execution safety:
+    - Added workflow concurrency guard to cancel stale in-progress runs per branch/ref.
+4. Nightly full diagnostics policy remains enforced:
+    - Latest full run artifact is discovered.
+    - Non-destructive promotion-policy validation is executed with `--check-only`.
+
+Day 18 pipeline behavior:
+1. Pull request to `main`/`develop` with backend/mvp/workflow/readme changes:
+    - Executes repeated smoke gate.
+    - Uploads smoke artifacts with 14-day retention.
+2. Nightly schedule (`0 2 * * *`):
+    - Executes repeated full gate.
+    - Validates strict promotion policy (`--require-consecutive-live-runs 2 --check-only`).
+    - Uploads full artifacts with 30-day retention.
+3. Manual workflow dispatch:
+    - Runs smoke, full, or both based on selected suite.
+
+Commands used to validate Day 18 YAML and scripts locally:
+
+```bat
+.venv\Scripts\python.exe -m pytest tests\test_eval_observability.py tests\test_eval_scoring.py tests\test_eval_routes.py -q
+```
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --offline --cases ..\mvp\golden_set_smoke.json --output-dir ..\mvp\experiments
+```
+
+```bat
+.venv\Scripts\python.exe scripts\eval_trends.py --runs-dir ..\mvp\experiments --limit 20
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment
