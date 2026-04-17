@@ -1,0 +1,70 @@
+@use './shared-page.scss' as *;
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.history-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.history-meta p {
+  margin: 0;
+}
+
+.ok {
+  margin-left: 0.4rem;
+  color: #16773a;
+}
+
+.fail {
+  margin-left: 0.4rem;
+  color: #aa2c22;
+}
+
+.hidden-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+details {
+  margin-top: 0.45rem;
+}
+
+summary {
+  cursor: pointer;
+  color: #214653;
+}
+
+pre {
+  margin-top: 0.4rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f3f7f6;
+  border-radius: 0.65rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(25, 61, 69, 0.15);
+}
+
+@media (max-width: 840px) {
+  .history-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

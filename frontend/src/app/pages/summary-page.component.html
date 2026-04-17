@@ -1,0 +1,46 @@
+<section class="panel">
+  <h2>Summary View</h2>
+  <div class="form-grid">
+    <label>
+      Source File
+      <input
+        type="text"
+        [ngModel]="form().source_file"
+        (ngModelChange)="updateField('source_file', $event)"
+        placeholder="sample_service_agreement.txt"
+        data-testid="summary-source-input"
+      />
+    </label>
+
+    <label>
+      Max Chunks
+      <input
+        type="number"
+        min="1"
+        max="20"
+        [ngModel]="form().max_chunks"
+        (ngModelChange)="updateField('max_chunks', $event)"
+      />
+    </label>
+  </div>
+
+  <button type="button" class="primary" (click)="run()" [disabled]="loading()" data-testid="summary-run-button">
+    {{ loading() ? 'Running...' : 'Run Summary' }}
+  </button>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (result(); as response) {
+    <div class="two-column">
+      <section class="surface" data-testid="summary-surface">
+        <h3>Summary</h3>
+        <p class="answer-text" data-testid="summary-text">{{ response.summary }}</p>
+        <p class="meta">Mode: {{ response.mode }} | Used Chunks: {{ response.used_chunks }}</p>
+      </section>
+
+      <app-citation-inspector [citations]="response.citations"></app-citation-inspector>
+    </div>
+  }
+</section>

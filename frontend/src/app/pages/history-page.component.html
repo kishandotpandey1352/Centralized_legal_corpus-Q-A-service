@@ -1,0 +1,79 @@
+<section class="panel">
+  <div class="history-header">
+    <h2>Run History</h2>
+
+    <div class="history-actions">
+      <button
+        type="button"
+        class="ghost"
+        [disabled]="!hasHistory()"
+        (click)="exportHistory()"
+        data-testid="history-export-button"
+      >
+        Export JSON
+      </button>
+
+      <button type="button" class="ghost" (click)="triggerImport()" data-testid="history-import-button">
+        Import JSON
+      </button>
+
+      <button
+        type="button"
+        class="ghost"
+        [disabled]="!hasHistory()"
+        (click)="clear()"
+        data-testid="history-clear-button"
+      >
+        Clear
+      </button>
+
+      <input
+        #importFileInput
+        type="file"
+        accept="application/json"
+        (change)="onImportSelected($event)"
+        class="hidden-file"
+        data-testid="history-import-input"
+      />
+    </div>
+  </div>
+
+  @if (importMessage()) {
+    <p class="ok">{{ importMessage() }}</p>
+  }
+
+  @if (importError()) {
+    <p class="error">{{ importError() }}</p>
+  }
+
+  @if (!hasHistory()) {
+    <p class="empty">No runs yet. Execute query, answer, or summary to populate history.</p>
+  }
+
+  <ul class="history-list" data-testid="history-list">
+    @for (entry of history(); track trackByHistoryId($index, entry)) {
+      <li class="history-item">
+        <div class="history-meta">
+          <p>
+            <strong>{{ entry.type | titlecase }}</strong>
+            <span [class.ok]="entry.status === 'success'" [class.fail]="entry.status === 'error'">
+              {{ entry.status }}
+            </span>
+          </p>
+          <p>{{ formatDate(entry.timestamp) }}</p>
+        </div>
+        @if (entry.message) {
+          <p class="error">{{ entry.message }}</p>
+        }
+        <details>
+          <summary>Request</summary>
+          <pre>{{ formatJson(entry.request) }}</pre>
+        </details>
+        <details>
+          <summary>Response</summary>
+          <pre>{{ formatJson(entry.response) }}</pre>
+        </details>
+      </li>
+    }
+  </ul>
+</section>

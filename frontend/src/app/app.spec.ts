@@ -14,7 +14,7 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render app heading', async () => {
+  it('should render shell heading', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;

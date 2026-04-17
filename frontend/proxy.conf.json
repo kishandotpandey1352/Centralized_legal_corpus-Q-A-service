@@ -1,5 +1,15 @@
 {
-  "/query": {
+  "/query/retrieve": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/query/answer": {
+    "target": "http://localhost:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/query/summary": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true

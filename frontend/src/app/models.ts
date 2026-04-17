@@ -22,9 +22,14 @@ export interface SummaryRequest {
 }
 
 export interface RetrievedChunk {
+  chunk_id?: string;
+  document_id?: string;
   source_file: string;
+  document_type?: string;
   chunk_index: number;
   chunk_text: string;
+  page_range?: string | null;
+  section_title?: string | null;
   score: number;
 }
 

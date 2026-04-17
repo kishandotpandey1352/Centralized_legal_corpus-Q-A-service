@@ -1,0 +1,69 @@
+.inspector {
+  border: 1px solid rgba(20, 55, 62, 0.14);
+  border-radius: 0.75rem;
+  background: #fffefb;
+  padding: 0.9rem;
+}
+
+h3 {
+  margin-top: 0;
+}
+
+.empty {
+  color: #546e79;
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 0.75rem;
+}
+
+.citation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.citation-pill {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(20, 55, 62, 0.15);
+  border-radius: 0.65rem;
+  background: #f7fbfa;
+  color: #173d48;
+  padding: 0.52rem 0.6rem;
+  cursor: pointer;
+}
+
+.citation-pill.active {
+  background: #174652;
+  color: #f4faf8;
+  border-color: #174652;
+}
+
+.citation-detail {
+  border: 1px solid rgba(20, 55, 62, 0.15);
+  border-radius: 0.65rem;
+  background: #f3f7f6;
+  padding: 0.7rem;
+}
+
+.meta {
+  margin-top: 0;
+  font-size: 0.82rem;
+  color: #45616c;
+}
+
+.chunk {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 840px) {
+  .inspector-grid {
+    grid-template-columns: 1fr;
+  }
+}

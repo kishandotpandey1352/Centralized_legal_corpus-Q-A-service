@@ -1,0 +1,88 @@
+<section class="panel">
+  <h2>Query Retrieval</h2>
+  <div class="form-grid">
+    <label>
+      Query
+      <textarea
+        rows="3"
+        [ngModel]="form().query"
+        (ngModelChange)="updateField('query', $event)"
+        placeholder="What is the cure period for material breach?"
+        data-testid="query-input"
+      ></textarea>
+    </label>
+
+    <label>
+      Top K
+      <input
+        type="number"
+        min="1"
+        max="20"
+        [ngModel]="form().top_k"
+        (ngModelChange)="updateField('top_k', $event)"
+      />
+    </label>
+
+    <label>
+      Source File (optional)
+      <input
+        type="text"
+        [ngModel]="form().source_file"
+        (ngModelChange)="updateField('source_file', $event)"
+        placeholder="sample_service_agreement.txt"
+      />
+    </label>
+
+    <label>
+      Document Type (optional)
+      <input
+        type="text"
+        [ngModel]="form().document_type"
+        (ngModelChange)="updateField('document_type', $event)"
+        placeholder="txt"
+      />
+    </label>
+
+    <label>
+      Candidate Pool Size
+      <input
+        type="number"
+        min="1"
+        max="100"
+        [ngModel]="form().candidate_pool_size"
+        (ngModelChange)="updateField('candidate_pool_size', $event)"
+      />
+    </label>
+
+    <label class="toggle">
+      <input
+        type="checkbox"
+        [ngModel]="form().rerank"
+        (ngModelChange)="updateField('rerank', $event)"
+      />
+      Enable rerank
+    </label>
+  </div>
+
+  <button type="button" class="primary" (click)="run()" [disabled]="loading()" data-testid="query-run-button">
+    {{ loading() ? 'Running...' : 'Run Query' }}
+  </button>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (result(); as response) {
+    <div class="result-block" data-testid="query-result-block">
+      <h3>Results ({{ response.results.length }})</h3>
+      <ul class="result-list">
+        @for (item of response.results; track $index) {
+          <li>
+            <p class="meta">{{ item.source_file }} | chunk {{ item.chunk_index }} | score {{ item.score }}</p>
+            <p>{{ item.chunk_text }}</p>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>
