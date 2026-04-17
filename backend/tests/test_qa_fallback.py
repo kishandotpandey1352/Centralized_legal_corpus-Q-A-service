@@ -11,6 +11,7 @@ from app.retrieval.service import (
     _question_terms,
     _structured_summary_from_contexts,
     _summary_needs_repair,
+    _summary_word_count,
     _should_force_cited_answer,
     _top_score,
 )
@@ -186,3 +187,44 @@ def test_summary_needs_repair_for_verbose_or_uncertain_text() -> None:
 def test_summary_needs_repair_false_for_compact_cited_summary() -> None:
     text = "1. Term is twelve months. [C1] 2. Cure period is thirty days. [C2]"
     assert _summary_needs_repair(text, min_inline_citations=2) is False
+
+
+def test_question_terms_handles_noisy_query_tokens() -> None:
+    terms = _question_terms("@@@ what?? cure period!!! material breach ### 2026")
+    assert "what" not in terms
+    assert "cure" in terms
+    assert "period" in terms
+    assert "material" in terms
+    assert "breach" in terms
+
+
+def test_lexical_confidence_with_noisy_query_still_detects_relevance() -> None:
+    results = [
+        {"chunk_text": "General procedural history unrelated to contract cure periods."},
+        {"chunk_text": "Material breach requires a thirty day cure period after written notice."},
+    ]
+    score = _lexical_confidence("!! cure??? period -- material breach ++", results)
+    assert score > 0.3
+
+
+def test_direct_cited_answer_mixed_domain_prompt_prefers_legal_fact() -> None:
+    answer = _direct_cited_answer(
+        "Mixing topics: tell me moon facts and contract cure period for material breach.",
+        [
+            {
+                "chunk_text": (
+                    "Either party may terminate for material breach if the breach remains uncured "
+                    "for thirty (30) days after written notice."
+                )
+            }
+        ],
+    )
+    assert "thirty (30) days" in answer
+    assert "moon" not in answer.lower()
+    assert "[C1]" in answer
+
+
+def test_summary_needs_repair_for_long_context_output() -> None:
+    long_summary = " ".join(["This sentence contains context-heavy legal detail and citation cues [C1]."] * 30)
+    assert _summary_word_count(long_summary) > 170
+    assert _summary_needs_repair(long_summary, min_inline_citations=2) is True

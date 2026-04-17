@@ -788,6 +788,47 @@ Commands used to validate Day 18 YAML and scripts locally:
 .venv\Scripts\python.exe scripts\eval_trends.py --runs-dir ..\mvp\experiments --limit 20
 ```
 
+## Day 19 status (robustness and edge-case testing)
+
+Implemented:
+1. Robustness-focused golden cases added:
+    - `A19`: noisy-query abstention stress.
+    - `A20`: mixed-domain prompt grounding stress.
+    - `S7`: long-context summary robustness.
+2. Coverage extended in both suites:
+    - Full suite: `mvp/golden_set_template.json`.
+    - Smoke suite: `mvp/golden_set_smoke.json`.
+3. Additional Day 19 unit/corpus tests:
+    - Noisy query token handling and lexical confidence resilience.
+    - Mixed-domain prompt grounding behavior.
+    - Long-context summary repair trigger and numbered summary output behavior.
+
+Day 19 focus areas:
+1. Abstention under noisy and out-of-domain prompts.
+2. Mixed-domain prompts where legal intent must remain grounded.
+3. Long-context summary generation and verbosity-drift resistance.
+4. Citation preservation under robustness scenarios.
+
+Commands used for Day 19:
+
+1. Targeted robustness tests:
+
+```bat
+.venv\Scripts\python.exe -m pytest tests\test_qa_fallback.py tests\test_corpus_based_examples.py tests\test_query_answer_integration.py tests\test_query_summary_integration.py -q
+```
+
+2. Smoke robustness eval:
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --cases ..\mvp\golden_set_smoke.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+3. Full robustness eval:
+
+```bat
+.venv\Scripts\python.exe scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

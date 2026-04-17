@@ -431,6 +431,60 @@
         "answer_correctness": 0.86
       },
       "notes": "Citation-sensitive summary expecting explicit grounding and cure-term mention."
+    },
+    {
+      "id": "A19",
+      "kind": "answer",
+      "category": "abstention",
+      "question": "zZz### noisy prompt ??? what are marine cargo insurance deductible tables here",
+      "top_k": 3,
+      "should_abstain": true,
+      "expected_mode": "low-confidence",
+      "min_citations": 0,
+      "require_valid_citations": true,
+      "expected_contains_any": ["Insufficient evidence"],
+      "expected_not_contains_any": ["marine cargo"],
+      "human_scores": {
+        "faithfulness": 1.0,
+        "answer_correctness": 1.0
+      },
+      "notes": "Day 19 noisy abstention stress."
+    },
+    {
+      "id": "A20",
+      "kind": "answer",
+      "category": "mixed_domain",
+      "question": "Mixed-domain prompt: mention astronomy if needed, but what cure period is listed for material breach?",
+      "top_k": 4,
+      "should_abstain": false,
+      "expected_mode": "evidence-direct",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": ["cure", "breach", "[C1]", "[C2]"],
+      "expected_not_contains_any": ["astronomy"],
+      "human_scores": {
+        "faithfulness": 0.9,
+        "answer_correctness": 0.86
+      },
+      "notes": "Day 19 mixed-domain grounding stress."
+    },
+    {
+      "id": "S7",
+      "kind": "summary",
+      "category": "summary_robustness",
+      "source_file": "sample_service_agreement.txt",
+      "max_chunks": 12,
+      "should_abstain": false,
+      "expected_mode": "llm-summary",
+      "min_citations": 2,
+      "require_valid_citations": true,
+      "expected_contains_any": ["[C1]", "[C2]"],
+      "expected_not_contains_any": ["maybe", "likely"],
+      "human_scores": {
+        "faithfulness": 0.88,
+        "answer_correctness": 0.84
+      },
+      "notes": "Day 19 long-context summary robustness."
     }
   ]
 }
