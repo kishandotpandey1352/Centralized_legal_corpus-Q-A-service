@@ -829,6 +829,37 @@ Commands used for Day 19:
 .venv\Scripts\python.exe scripts\eval_runner.py --cases ..\mvp\golden_set_template.json --baseline ..\mvp\experiments\baseline_metrics.json --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
 ```
 
+## Day 20 status (release readiness checkpoint)
+
+Implemented:
+1. One-command Day 20 checkpoint script: `backend/scripts/release_readiness.py`.
+2. Baseline candidate freeze step:
+    - Freezes latest candidate run metrics (`challenger_metrics`) into timestamped snapshot.
+    - Freezes current baseline metrics into timestamped snapshot.
+3. Final multi-run comparison step:
+    - Executes repeated live evals via `eval_series.py` with release thresholds.
+    - Persists aggregate output in `series_latest.json` under release output directory.
+4. Promotion policy validation step (non-destructive):
+    - Runs `promote_baseline.py --check-only` against latest final-series run.
+    - Enforces consecutive live-run requirement before any actual baseline promotion.
+5. Publishable report artifacts:
+    - `release_readiness_latest.json`
+    - `release_readiness_latest.md`
+
+Day 20 command (from `backend/`):
+
+```bat
+.venv\Scripts\python.exe scripts\release_readiness.py --api-base-url http://127.0.0.1:8000 --cases ..\mvp\golden_set_template.json --baseline-file ..\mvp\experiments\baseline_metrics.json --runs-dir ..\mvp\experiments --output-dir ..\mvp\experiments\release_readiness --runs 2 --require-winner-rate 0.70 --require-passing-rate 1.00 --require-consecutive-live-runs 2 --answer-timeout-seconds 25 --summary-timeout-seconds 90 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5 --read-timeout-seconds 90 --write-timeout-seconds 15 --pool-timeout-seconds 15 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5
+```
+
+Day 20 generated outputs (in `mvp/experiments/release_readiness/`):
+1. `release_candidate_metrics_*.json`
+2. `baseline_snapshot_*.json`
+3. `run_*.json` and `run_*.md` (final comparison runs)
+4. `series_latest.json`
+5. `release_readiness_latest.json`
+6. `release_readiness_latest.md`
+
 ## External embedding model setup (download + usage)
 
 ### 1. Configure environment

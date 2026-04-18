@@ -1,0 +1,9 @@
+{
+  "faithfulness": 0.9163,
+  "answer_correctness": 0.8962,
+  "retrieval_recall_at_5": 1.0,
+  "abstention_accuracy": 0.75,
+  "hallucination_rate": 0.0,
+  "invalid_citation_rate": 0.0,
+  "latency_p95_ms": 2224
+}

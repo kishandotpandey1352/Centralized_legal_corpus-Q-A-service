@@ -1,0 +1,33 @@
+{
+  "generated_at_utc": "2026-04-18T00:05:22.154199+00:00",
+  "api_base_url": "http://127.0.0.1:8000",
+  "cases_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_template.json",
+  "health": {
+    "ok": true,
+    "detail": "{\"status\":\"ok\"}"
+  },
+  "freeze": {
+    "candidate_run_json": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\run_20260417_220957_132646.json",
+    "candidate_snapshot_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\release_candidate_metrics_20260417_222737.json",
+    "baseline_snapshot_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\baseline_snapshot_20260417_222737.json"
+  },
+  "final_series": {
+    "runner_exit_code": 1,
+    "series_latest_file": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\series_latest.json",
+    "series_pass": false,
+    "winner_rate": 0.0,
+    "passing_rate": 0.0,
+    "overall_score_mean": 0.8517,
+    "latency_p95_ms_mean": 124702,
+    "stdout": "Run saved: C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\run_20260417_224125_225455.json\nSummary: C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\run_20260417_224125_225455.md\nChallenger overall_score: 0.8515\nCompare winner: baseline\nRegression gate failed: challenger did not win.\nRun saved: C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\run_20260418_000521_892873.json\nSummary: C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\run_20260418_000521_892873.md\nChallenger overall_score: 0.8518\nCompare winner: baseline\nRegression gate failed: challenger did not win.\n[1/2] Executing: c:\\Users\\kisha\\projects\\RAG_legal\\.venv\\Scripts\\python.exe C:\\Users\\kisha\\projects\\RAG_legal\\backend\\scripts\\eval_runner.py --api-base-url http://127.0.0.1:8000 --cases C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_template.json --baseline C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\baseline_metrics.json --output-dir C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness --timeout-seconds 90.0 --max-retries 1 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5.0 --answer-timeout-seconds 25.0 --summary-timeout-seconds 90.0 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5.0 --read-timeout-seconds 90.0 --write-timeout-seconds 15.0 --pool-timeout-seconds 15.0\n[2/2] Executing: c:\\Users\\kisha\\projects\\RAG_legal\\.venv\\Scripts\\python.exe C:\\Users\\kisha\\projects\\RAG_legal\\backend\\scripts\\eval_runner.py --api-base-url http://127.0.0.1:8000 --cases C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\golden_set_template.json --baseline C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\baseline_metrics.json --output-dir C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness --timeout-seconds 90.0 --max-retries 1 --retry-backoff-seconds 0.5 --retry-backoff-multiplier 2.0 --max-retry-backoff-seconds 5.0 --answer-timeout-seconds 25.0 --summary-timeout-seconds 90.0 --answer-max-retries 2 --summary-max-retries 2 --connect-timeout-seconds 5.0 --read-timeout-seconds 90.0 --write-timeout-seconds 15.0 --pool-timeout-seconds 15.0\nSeries aggregate saved: C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\series_latest.json\nwinner_rate=0.00%, passing_rate=0.00%, overall_score_mean=0.8517, latency_p95_ms_mean=124702\nSeries gate failed: winner/pass rates below thresholds.\n",
+    "stderr": ""
+  },
+  "promotion_policy_check": {
+    "exit_code": 1,
+    "passed": false,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\kisha\\projects\\RAG_legal\\backend\\scripts\\promote_baseline.py\", line 211, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"C:\\Users\\kisha\\projects\\RAG_legal\\backend\\scripts\\promote_baseline.py\", line 172, in main\n    _validate_promotion_policy(run_payload, allow_offline=args.allow_offline)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\kisha\\projects\\RAG_legal\\backend\\scripts\\promote_baseline.py\", line 96, in _validate_promotion_policy\n    raise ValueError(f\"Promotion blocked: compare winner is '{winner}', not 'challenger'.\")\nValueError: Promotion blocked: compare winner is 'baseline', not 'challenger'.\n",
+    "validated_run_json": "C:\\Users\\kisha\\projects\\RAG_legal\\mvp\\experiments\\release_readiness\\run_20260418_000521_892873.json"
+  },
+  "release_ready": false
+}
