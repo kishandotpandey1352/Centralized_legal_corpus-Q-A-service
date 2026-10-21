@@ -97,3 +97,36 @@ def test_retrieve_route_passes_filters_and_rerank_options(monkeypatch) -> None:
     assert captured["document_type"] == "txt"
     assert captured["rerank"] is True
     assert captured["candidate_pool_size"] == 12
+
+
+def test_retrieve_route_passes_optional_legal_metadata_filters(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_retrieve_similar_chunks(db, query: str, top_k: int = 5, **kwargs):
+        captured.update(kwargs)
+        return {"query": query, "top_k": top_k, "results": []}
+
+    monkeypatch.setattr(routes_retrieval, "retrieve_similar_chunks", fake_retrieve_similar_chunks)
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+
+    response = client.post(
+        "/query/retrieve",
+        json={
+            "query": "What cases discuss judicial review?",
+            "jurisdiction": "UK",
+            "court": "Supreme Court",
+            "canonical_citation": "[2024] UKSC 1",
+            "decision_date": "2024-01-15",
+            "practice_area": "public law",
+        },
+    )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert captured["jurisdiction"] == "UK"
+    assert captured["court"] == "Supreme Court"
+    assert captured["canonical_citation"] == "[2024] UKSC 1"
+    assert captured["decision_date"] == "2024-01-15"
+    assert captured["practice_area"] == "public law"

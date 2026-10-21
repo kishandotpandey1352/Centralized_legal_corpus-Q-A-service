@@ -3,6 +3,11 @@ export interface RetrievalRequest {
   top_k: number;
   source_file?: string;
   document_type?: string;
+  jurisdiction?: string;
+  court?: string;
+  canonical_citation?: string;
+  decision_date?: string;
+  practice_area?: string;
   rerank: boolean;
   candidate_pool_size?: number;
 }
@@ -12,6 +17,11 @@ export interface AnswerRequest {
   top_k: number;
   source_file?: string;
   document_type?: string;
+  jurisdiction?: string;
+  court?: string;
+  canonical_citation?: string;
+  decision_date?: string;
+  practice_area?: string;
   rerank: boolean;
   candidate_pool_size?: number;
 }

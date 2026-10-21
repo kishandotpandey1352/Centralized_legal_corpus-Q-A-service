@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -11,6 +13,11 @@ class RetrievalRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     source_file: str | None = None
     document_type: str | None = None
+    jurisdiction: str | None = None
+    court: str | None = None
+    canonical_citation: str | None = None
+    decision_date: date | None = None
+    practice_area: str | None = None
     rerank: bool = True
     candidate_pool_size: int | None = Field(default=None, ge=1, le=100)
 
@@ -20,6 +27,11 @@ class AnswerRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     source_file: str | None = None
     document_type: str | None = None
+    jurisdiction: str | None = None
+    court: str | None = None
+    canonical_citation: str | None = None
+    decision_date: date | None = None
+    practice_area: str | None = None
     rerank: bool = True
     candidate_pool_size: int | None = Field(default=None, ge=1, le=100)
 
@@ -35,14 +47,22 @@ router = APIRouter(prefix="/query", tags=["retrieval"])
 @router.post("/retrieve")
 def retrieve(request: RetrievalRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
+        kwargs = {
+            "source_file": request.source_file,
+            "document_type": request.document_type,
+            "jurisdiction": request.jurisdiction,
+            "court": request.court,
+            "canonical_citation": request.canonical_citation,
+            "decision_date": request.decision_date.isoformat() if request.decision_date else None,
+            "practice_area": request.practice_area,
+            "rerank": request.rerank,
+            "candidate_pool_size": request.candidate_pool_size,
+        }
         return retrieve_similar_chunks(
             db,
             query=request.query,
             top_k=request.top_k,
-            source_file=request.source_file,
-            document_type=request.document_type,
-            rerank=request.rerank,
-            candidate_pool_size=request.candidate_pool_size,
+            **{key: value for key, value in kwargs.items() if value is not None or key in {"rerank"}},
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -51,14 +71,22 @@ def retrieve(request: RetrievalRequest, db: Session = Depends(get_db)) -> dict[s
 @router.post("/answer")
 def answer(request: AnswerRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
+        kwargs = {
+            "source_file": request.source_file,
+            "document_type": request.document_type,
+            "jurisdiction": request.jurisdiction,
+            "court": request.court,
+            "canonical_citation": request.canonical_citation,
+            "decision_date": request.decision_date.isoformat() if request.decision_date else None,
+            "practice_area": request.practice_area,
+            "rerank": request.rerank,
+            "candidate_pool_size": request.candidate_pool_size,
+        }
         return answer_question(
             db,
             question=request.question,
             top_k=request.top_k,
-            source_file=request.source_file,
-            document_type=request.document_type,
-            rerank=request.rerank,
-            candidate_pool_size=request.candidate_pool_size,
+            **{key: value for key, value in kwargs.items() if value is not None or key in {"rerank"}},
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

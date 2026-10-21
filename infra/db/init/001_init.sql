@@ -5,6 +5,11 @@ CREATE TABLE IF NOT EXISTS documents (
     source_file TEXT NOT NULL,
     document_type TEXT NOT NULL,
     title TEXT,
+    jurisdiction TEXT,
+    court TEXT,
+    canonical_citation TEXT,
+    decision_date DATE,
+    practice_area TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -21,3 +26,7 @@ CREATE TABLE IF NOT EXISTS chunks (
 
 CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_embedding_cosine ON chunks USING ivfflat (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_documents_jurisdiction ON documents(jurisdiction);
+CREATE INDEX IF NOT EXISTS idx_documents_court ON documents(court);
+CREATE INDEX IF NOT EXISTS idx_documents_decision_date ON documents(decision_date);
+CREATE INDEX IF NOT EXISTS idx_documents_practice_area ON documents(practice_area);

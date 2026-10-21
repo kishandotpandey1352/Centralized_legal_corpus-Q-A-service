@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from typing import Any
 
 from sqlalchemy import text
@@ -9,6 +10,10 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.llm.service import build_grounded_prompt, build_summary_prompt, generate_answer_with_ollama
 from app.retrieval.embeddings import embed_texts, vector_to_pg_literal
+
+
+_CITATION_MARKER_RE = re.compile(r"\[C[^\]\s]+\]")
+_VALID_CITATION_ID_RE = re.compile(r"C[1-9]\d*")
 
 
 def _normalize_vector_score(score_value: float | int | None) -> float:
@@ -20,6 +25,17 @@ def _normalize_vector_score(score_value: float | int | None) -> float:
     if score > 1.0:
         return 1.0
     return score
+
+
+def _normalize_decision_date(value: str | date | None) -> date | None:
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return date.fromisoformat(value.strip())
+    except ValueError as exc:
+        raise ValueError("decision_date must use ISO format YYYY-MM-DD") from exc
 
 
 def _rerank_results(
@@ -64,6 +80,11 @@ def retrieve_similar_chunks(
     top_k: int = 5,
     source_file: str | None = None,
     document_type: str | None = None,
+    jurisdiction: str | None = None,
+    court: str | None = None,
+    canonical_citation: str | None = None,
+    decision_date: str | date | None = None,
+    practice_area: str | None = None,
     rerank: bool = True,
     candidate_pool_size: int | None = None,
 ) -> dict[str, object]:
@@ -87,6 +108,11 @@ def retrieve_similar_chunks(
 
     cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
     cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
+    cleaned_jurisdiction = jurisdiction.strip() if isinstance(jurisdiction, str) and jurisdiction.strip() else None
+    cleaned_court = court.strip() if isinstance(court, str) and court.strip() else None
+    cleaned_citation = canonical_citation.strip() if isinstance(canonical_citation, str) and canonical_citation.strip() else None
+    cleaned_decision_date = _normalize_decision_date(decision_date)
+    cleaned_practice_area = practice_area.strip() if isinstance(practice_area, str) and practice_area.strip() else None
 
     pool_size = candidate_pool_size if candidate_pool_size is not None else top_k * 4
     pool_size = max(top_k, min(pool_size, 100))
@@ -100,6 +126,17 @@ def retrieve_similar_chunks(
     if cleaned_document_type:
         where_clauses.append("d.document_type = :document_type")
         sql_params["document_type"] = cleaned_document_type
+    metadata_filters = {
+        "jurisdiction": cleaned_jurisdiction,
+        "court": cleaned_court,
+        "canonical_citation": cleaned_citation,
+        "decision_date": cleaned_decision_date.isoformat() if cleaned_decision_date else None,
+        "practice_area": cleaned_practice_area,
+    }
+    for field, value in metadata_filters.items():
+        if value:
+            where_clauses.append(f"d.{field} = :{field}")
+            sql_params[field] = value
 
     sql_query = f"""
         SELECT
@@ -111,6 +148,11 @@ def retrieve_similar_chunks(
             c.section_title,
             d.source_file,
             d.document_type,
+            d.jurisdiction,
+            d.court,
+            d.canonical_citation,
+            d.decision_date,
+            d.practice_area,
             (1 - (c.embedding <=> CAST(:query_vector AS vector))) AS score
         FROM chunks c
         JOIN documents d ON d.id = c.document_id
@@ -127,6 +169,11 @@ def retrieve_similar_chunks(
             "document_id": str(row["document_id"]),
             "source_file": row["source_file"],
             "document_type": row["document_type"],
+            "jurisdiction": row["jurisdiction"],
+            "court": row["court"],
+            "canonical_citation": row["canonical_citation"],
+            "decision_date": row["decision_date"].isoformat() if row["decision_date"] else None,
+            "practice_area": row["practice_area"],
             "chunk_index": row["chunk_index"],
             "page_range": row["page_range"],
             "section_title": row["section_title"],
@@ -151,6 +198,11 @@ def retrieve_similar_chunks(
         "top_k": top_k,
         "source_file": cleaned_source_file,
         "document_type": cleaned_document_type,
+        "jurisdiction": cleaned_jurisdiction,
+        "court": cleaned_court,
+        "canonical_citation": cleaned_citation,
+        "decision_date": cleaned_decision_date.isoformat() if cleaned_decision_date else None,
+        "practice_area": cleaned_practice_area,
         "rerank_enabled": rerank,
         "candidate_pool_size": pool_size,
         "results": final_results,
@@ -159,15 +211,24 @@ def retrieve_similar_chunks(
 
 def _build_citations(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     citations: list[dict[str, Any]] = []
-    for index, item in enumerate(results, start=1):
+    for item in results:
+        if not str(item.get("source_file") or "").strip() or not str(item.get("chunk_id") or "").strip():
+            continue
+        index = len(citations) + 1
         citations.append(
             {
                 "id": f"C{index}",
+                "document_id": item.get("document_id"),
                 "source_file": item.get("source_file"),
                 "chunk_id": item.get("chunk_id"),
                 "chunk_index": item.get("chunk_index"),
                 "page_range": item.get("page_range"),
                 "section_title": item.get("section_title"),
+                "jurisdiction": item.get("jurisdiction"),
+                "court": item.get("court"),
+                "canonical_citation": item.get("canonical_citation"),
+                "decision_date": item.get("decision_date"),
+                "practice_area": item.get("practice_area"),
                 "score": item.get("score"),
             }
         )
@@ -445,7 +506,7 @@ def _summary_needs_repair(summary_text: str, min_inline_citations: int) -> bool:
 
 
 def _extract_inline_citation_ids(text_value: str) -> list[str]:
-    return re.findall(r"C\d+", text_value or "")
+    return [match[1:-1] for match in _CITATION_MARKER_RE.findall(text_value or "")]
 
 
 def _enforce_citation_integrity(
@@ -461,11 +522,13 @@ def _enforce_citation_integrity(
     valid_ids: list[str] = []
     for citation in citations:
         citation_id = str(citation.get("id", "")).strip()
-        if re.fullmatch(r"C\d+", citation_id):
+        if _VALID_CITATION_ID_RE.fullmatch(citation_id) and citation_id not in valid_ids:
             valid_ids.append(citation_id)
 
     if not valid_ids:
-        return stripped
+        if stripped == "Insufficient evidence in provided documents.":
+            return stripped
+        return "Insufficient evidence in provided documents."
 
     inline_ids = _extract_inline_citation_ids(stripped)
     filtered_inline = [citation_id for citation_id in inline_ids if citation_id in valid_ids]
@@ -480,11 +543,11 @@ def _enforce_citation_integrity(
 
     # Rebuild text with a stable inline citation tail using only known citation IDs.
     if preserve_line_breaks:
-        core = re.sub(r"\[C\d+\]", "", stripped)
+        core = _CITATION_MARKER_RE.sub("", stripped)
         lines = [re.sub(r"\s+", " ", line).strip() for line in core.splitlines() if line.strip()]
         core = "\n".join(lines)
     else:
-        core = re.sub(r"\s*\[C\d+\]\s*", " ", stripped)
+        core = _CITATION_MARKER_RE.sub(" ", stripped)
         core = re.sub(r"\s+", " ", core).strip()
     if not core:
         core = "Insufficient evidence in provided documents."
@@ -567,6 +630,11 @@ def answer_question(
     top_k: int = 5,
     source_file: str | None = None,
     document_type: str | None = None,
+    jurisdiction: str | None = None,
+    court: str | None = None,
+    canonical_citation: str | None = None,
+    decision_date: str | date | None = None,
+    practice_area: str | None = None,
     rerank: bool = True,
     candidate_pool_size: int | None = None,
 ) -> dict[str, Any]:
@@ -574,14 +642,26 @@ def answer_question(
     if not cleaned_question:
         raise ValueError("Question cannot be empty")
 
+    retrieval_kwargs: dict[str, Any] = {
+        "source_file": source_file,
+        "document_type": document_type,
+        "jurisdiction": jurisdiction,
+        "court": court,
+        "canonical_citation": canonical_citation,
+        "decision_date": decision_date,
+        "practice_area": practice_area,
+        "rerank": rerank,
+        "candidate_pool_size": candidate_pool_size,
+    }
     retrieval = retrieve_similar_chunks(
         db=db,
         query=cleaned_question,
         top_k=top_k,
-        source_file=source_file,
-        document_type=document_type,
-        rerank=rerank,
-        candidate_pool_size=candidate_pool_size,
+        **{
+            key: value
+            for key, value in retrieval_kwargs.items()
+            if value is not None or key == "rerank"
+        },
     )
     results = retrieval.get("results", [])
     citations = _build_citations(results)

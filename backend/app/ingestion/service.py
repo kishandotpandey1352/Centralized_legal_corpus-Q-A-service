@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
+from typing import Mapping
 from uuid import uuid4
 
 import fitz
@@ -15,6 +17,15 @@ from app.retrieval.embeddings import embed_texts, vector_to_pg_literal
 
 
 SUPPORTED_EXTENSIONS = {".txt", ".docx", ".pdf"}
+
+
+@dataclass(frozen=True)
+class DocumentMetadata:
+    jurisdiction: str | None = None
+    court: str | None = None
+    canonical_citation: str | None = None
+    decision_date: date | None = None
+    practice_area: str | None = None
 
 
 @dataclass(frozen=True)
@@ -103,7 +114,29 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def ingest_sample_docs(db: Session) -> dict[str, object]:
+def _clean_metadata_value(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def _normalize_document_metadata(metadata: DocumentMetadata | None) -> DocumentMetadata:
+    if metadata is None:
+        return DocumentMetadata()
+    return DocumentMetadata(
+        jurisdiction=_clean_metadata_value(metadata.jurisdiction),
+        court=_clean_metadata_value(metadata.court),
+        canonical_citation=_clean_metadata_value(metadata.canonical_citation),
+        decision_date=metadata.decision_date,
+        practice_area=_clean_metadata_value(metadata.practice_area),
+    )
+
+
+def ingest_sample_docs(
+    db: Session,
+    metadata_by_source: Mapping[str, DocumentMetadata] | None = None,
+) -> dict[str, object]:
     sample_docs_dir = _repo_root() / "data" / "sample_docs"
     if not sample_docs_dir.exists():
         raise FileNotFoundError(f"Sample docs folder not found: {sample_docs_dir}")
@@ -131,11 +164,20 @@ def ingest_sample_docs(db: Session) -> dict[str, object]:
             )
 
             document_id = str(uuid4())
+            metadata = _normalize_document_metadata(
+                metadata_by_source.get(file_path.name) if metadata_by_source else None
+            )
             db.execute(
                 text(
                     """
-                    INSERT INTO documents (id, source_file, document_type, title)
-                    VALUES (:id, :source_file, :document_type, :title)
+                    INSERT INTO documents (
+                        id, source_file, document_type, title, jurisdiction, court,
+                        canonical_citation, decision_date, practice_area
+                    )
+                    VALUES (
+                        :id, :source_file, :document_type, :title, :jurisdiction, :court,
+                        :canonical_citation, :decision_date, :practice_area
+                    )
                     """
                 ),
                 {
@@ -143,6 +185,11 @@ def ingest_sample_docs(db: Session) -> dict[str, object]:
                     "source_file": file_path.name,
                     "document_type": file_path.suffix.lower().lstrip("."),
                     "title": _extract_title(full_text, file_path.stem),
+                    "jurisdiction": metadata.jurisdiction,
+                    "court": metadata.court,
+                    "canonical_citation": metadata.canonical_citation,
+                    "decision_date": metadata.decision_date,
+                    "practice_area": metadata.practice_area,
                 },
             )
 

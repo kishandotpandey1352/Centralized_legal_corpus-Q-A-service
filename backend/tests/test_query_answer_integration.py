@@ -84,3 +84,32 @@ def test_query_answer_returns_citation_structure(monkeypatch) -> None:
     assert "chunk_id" in citation
     assert "chunk_index" in citation
     assert "score" in citation
+
+
+def test_query_answer_accepts_optional_legal_metadata_filters(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_retrieve_similar_chunks(db, query: str, top_k: int = 5, **kwargs):
+        captured.update(kwargs)
+        return {"query": query, "top_k": top_k, "results": []}
+
+    monkeypatch.setattr(retrieval_service, "retrieve_similar_chunks", fake_retrieve_similar_chunks)
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+
+    response = client.post(
+        "/query/answer",
+        json={
+            "question": "Which cases discuss judicial review?",
+            "jurisdiction": "UK",
+            "court": "Supreme Court",
+            "decision_date": "2024-01-15",
+        },
+    )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert captured["jurisdiction"] == "UK"
+    assert captured["court"] == "Supreme Court"
+    assert captured["decision_date"] == "2024-01-15"

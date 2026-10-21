@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "legal_rag"
     postgres_user: str = "legal_rag"
-    postgres_password: str = "legal_rag"
+    postgres_password: str = ""
     database_url: str = "postgresql+psycopg://legal_rag:legal_rag@localhost:5432/legal_rag"
 
     ollama_base_url: str = "http://localhost:11434"

@@ -1278,8 +1278,9 @@ def main() -> int:
     if compare_payload is not None:
         winner = str(compare_payload.get("winner", "unknown"))
         print(f"Compare winner: {winner}")
-        # CI gate: runner fails if challenger does not win.
-        if winner != "challenger":
+        # Live runs enforce challenger promotion; offline runs validate case behavior
+        # without treating a deterministic simulation as a promotion decision.
+        if winner != "challenger" and not args.offline:
             print("Regression gate failed: challenger did not win.")
             return 1
 

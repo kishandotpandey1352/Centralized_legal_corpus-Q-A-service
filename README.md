@@ -1,5 +1,8 @@
 # Centralized Legal Corpus Q&A Service
 
+[![Tests](https://github.com/kishandotpandey1352/legal_RAG/actions/workflows/tests.yml/badge.svg)](https://github.com/kishandotpandey1352/legal_RAG/actions/workflows/tests.yml)
+[![Evaluation gates](https://github.com/kishandotpandey1352/legal_RAG/actions/workflows/eval-gates.yml/badge.svg)](https://github.com/kishandotpandey1352/legal_RAG/actions/workflows/eval-gates.yml)
+
 Production-oriented legal RAG prototype demonstrating how a controlled legal
 corpus can support grounded questions, traceable evidence, explicit abstention,
 and regression-tested retrieval changes.
@@ -78,6 +81,26 @@ flowchart LR
 | Scoring | `POST /eval/score` | Applies the configured evaluation rubric to supplied metrics. |
 | Comparison | `POST /eval/compare` | Compares baseline and challenger metrics and detects gate regressions. |
 
+### Current implementation boundary
+
+The following retrieval capabilities are implemented in the local prototype:
+
+- metadata filtering by `source_file`, `document_type`, and optional legal
+  metadata (`jurisdiction`, `court`, `canonical_citation`, `decision_date`,
+  and `practice_area`)
+- vector candidate retrieval with pgvector cosine similarity
+- lexical-overlap plus vector-score reranking
+- configurable reranking and candidate-pool controls
+
+The prototype does **not** implement a separate BM25 or other sparse-retrieval
+index. References to sparse retrieval, ACL filtering, or enterprise retrieval
+services below are future evolution, not descriptions of the current system.
+
+Legal metadata is nullable and is populated only when supplied explicitly through
+the ingestion request. The current sample corpus has no authoritative metadata
+manifest, so the service does not infer or fabricate legal metadata from source
+text.
+
 ## Key Features
 
 ### Legal-document ingestion
@@ -86,13 +109,16 @@ flowchart LR
 - Normalizes extracted text and preserves PDF page ranges.
 - Splits content into overlapping chunks.
 - Stores source file, document type, chunk index, page range, and section metadata.
+- Supports optional explicit legal metadata: jurisdiction, court, canonical
+  citation, decision date, and practice area.
 - Re-ingestion replaces the existing document record for the same source file.
 
 ### Retrieval and answering
 
 - PostgreSQL stores document metadata and pgvector embeddings.
 - Cosine-similarity candidate retrieval supports `source_file` and
-  `document_type` filters.
+  `document_type` filters plus optional jurisdiction, court, canonical citation,
+  decision date, and practice-area filters.
 - Candidate pools are reranked using a configurable lexical/vector score.
 - Evidence-direct answers prefer the most lexically grounded sentence.
 - Ollama generation is configured for grounded responses using
@@ -145,6 +171,8 @@ rubrics, and recorded artifacts under `mvp/`.
 
 The table below uses the checked-in baseline artifact
 [`mvp/experiments/baseline_metrics.json`](mvp/experiments/baseline_metrics.json).
+These are recorded baseline-artifact values, not a universal or production
+benchmark.
 The quality gates are taken from
 [`backend/app/evaluation/scoring.py`](backend/app/evaluation/scoring.py) and
 [`mvp/scoring_rubric.md`](mvp/scoring_rubric.md).
@@ -177,7 +205,7 @@ The GitHub Actions workflow
 - Runs on pull requests targeting `main` or `develop`.
 - Installs backend dependencies with Python 3.11.
 - Runs repeated smoke evaluations against `mvp/golden_set_smoke.json`.
-- Requires a winner rate of at least `0.60`.
+- Requires every offline evaluation run to pass its configured case checks.
 - Requires a passing rate of `1.00`.
 - Uploads JSON, Markdown, and series artifacts for 14 days.
 
@@ -186,14 +214,19 @@ The GitHub Actions workflow
 - Runs on the nightly schedule or by manual workflow dispatch.
 - Uses `mvp/golden_set_template.json`.
 - Runs repeated full evaluations with longer answer and summary timeouts.
-- Requires a winner rate of at least `0.70`.
+- Requires every offline evaluation run to pass its configured case checks.
 - Requires a passing rate of `1.00`.
-- Checks the non-destructive baseline promotion policy.
 - Uploads evaluation artifacts for 30 days.
 
 The comparison policy requires a challenger score improvement of at least `0.02`
 with no pass/fail gate regression. When scores are close, the evaluator uses
 latency and hallucination rate as tie-breakers.
+
+The checked-in GitHub workflow runs the deterministic runner in offline mode
+because it does not provision the local PostgreSQL/Ollama/API stack. It therefore
+validates repeatable case behavior and pass rates, but does not promote a
+baseline. Live baseline promotion remains a separate policy for API-backed
+evaluation runs.
 
 Normal unit tests are not sufficient for RAG systems because retrieval results,
 grounding, citation validity, abstention, model output structure, and latency
@@ -256,6 +289,7 @@ to review those changes.
 From the repository root:
 
 ```bat
+set POSTGRES_PASSWORD=choose-a-local-password
 docker compose -f infra\docker-compose.yml up -d postgres
 ```
 
@@ -268,11 +302,19 @@ The service exposes PostgreSQL on `localhost:5432` and initializes
 copy backend\.env.example backend\.env
 ```
 
+Set the same local-only password in `backend\.env` before starting the API.
+The repository does not contain a default database password.
+
 The local database connection should be:
 
 ```env
 DATABASE_URL=postgresql+psycopg://legal_rag:<password>@localhost:5432/legal_rag
 ```
+
+For an existing database, apply
+[`infra/db/migrations/002_add_optional_legal_metadata.sql`](infra/db/migrations/002_add_optional_legal_metadata.sql).
+Fresh Docker databases receive the nullable columns from
+[`infra/db/init/001_init.sql`](infra/db/init/001_init.sql).
 
 For a lightweight local retrieval smoke test, use:
 
@@ -313,6 +355,41 @@ In a second terminal:
 cd backend
 .venv\Scripts\activate.bat
 curl -X POST http://localhost:8000/ingest/sample-docs
+```
+
+Optional metadata can be supplied explicitly during ingestion. No LLM is used to
+populate these fields:
+
+```json
+{
+  "metadata_by_source": {
+    "known_case.pdf": {
+      "jurisdiction": "UK",
+      "court": "Supreme Court",
+      "canonical_citation": "[2024] UKSC 1",
+      "decision_date": "2024-01-15",
+      "practice_area": "public law"
+    }
+  }
+}
+```
+
+The metadata keys must correspond to files in `data/sample_docs/`; omitted fields
+remain `NULL`.
+
+Optional legal metadata filters can be used on both `/query/retrieve` and
+`/query/answer`. For an answer request:
+
+```json
+{
+  "question": "What cases discuss judicial review?",
+  "top_k": 5,
+  "jurisdiction": "UK",
+  "court": "Supreme Court",
+  "canonical_citation": "[2024] UKSC 1",
+  "decision_date": "2024-01-15",
+  "practice_area": "public law"
+}
 ```
 
 ### Start the Angular frontend
@@ -481,6 +558,8 @@ without competing with the project overview above.
 Additional references:
 
 - [Frontend README](frontend/README.md)
+- [Evaluation guide](docs/evaluation.md)
+- [Production architecture evolution](docs/production-architecture.md)
 - [Evaluation rubric](mvp/scoring_rubric.md)
 - [MVP scope notes](mvp/README.md)
 - [Development log](docs/development-log.md)

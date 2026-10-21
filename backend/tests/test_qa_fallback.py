@@ -2,6 +2,7 @@ from app.retrieval.service import (
     _clean_sentence,
     _contains_force_keyword,
     _direct_cited_answer,
+    _build_citations,
     _enforce_citation_integrity,
     _fallback_answer,
     _force_concise_cited_answer,
@@ -151,6 +152,24 @@ def test_enforce_citation_integrity_filters_unknown_markers() -> None:
     assert enriched.endswith("[C1]")
 
 
+def test_enforce_citation_integrity_removes_unresolved_markers() -> None:
+    citations = [{"id": "C1"}]
+    enriched = _enforce_citation_integrity("Grounded answer [Cfoo]", citations, min_required=1)
+    assert "[Cfoo]" not in enriched
+    assert enriched.endswith("[C1]")
+
+
+def test_enforce_citation_integrity_deduplicates_citation_markers() -> None:
+    citations = [{"id": "C1"}, {"id": "C2"}]
+    enriched = _enforce_citation_integrity("Grounded answer [C1] [C1] [C2]", citations, min_required=1)
+    assert enriched.endswith("[C1] [C2]")
+
+
+def test_answer_without_citation_abstains_when_evidence_is_required() -> None:
+    enriched = _enforce_citation_integrity("Unsupported generated answer.", [], min_required=1)
+    assert enriched == "Insufficient evidence in provided documents."
+
+
 def test_enforce_citation_integrity_adds_marker_to_abstention_text() -> None:
     citations = [{"id": "C1"}]
     enriched = _enforce_citation_integrity("Insufficient evidence in provided documents.", citations, min_required=1)
@@ -163,6 +182,49 @@ def test_enforce_citation_integrity_preserves_lines_for_summary() -> None:
     enriched = _enforce_citation_integrity(text, citations, min_required=2, preserve_line_breaks=True)
     assert "\n" in enriched
     assert enriched.endswith("[C1] [C2]")
+
+
+def test_build_citations_resolve_to_retrieved_document_and_chunk() -> None:
+    citations = _build_citations(
+        [
+            {
+                "document_id": "doc-1",
+                "source_file": "case.pdf",
+                "chunk_id": "chunk-1",
+                "chunk_index": 2,
+                "page_range": "4",
+                "section_title": "Reasons",
+            }
+        ]
+    )
+    assert citations == [
+        {
+            "id": "C1",
+            "document_id": "doc-1",
+            "source_file": "case.pdf",
+            "chunk_id": "chunk-1",
+            "chunk_index": 2,
+            "page_range": "4",
+            "section_title": "Reasons",
+            "jurisdiction": None,
+            "court": None,
+            "canonical_citation": None,
+            "decision_date": None,
+            "practice_area": None,
+            "score": None,
+        }
+    ]
+
+
+def test_build_citations_excludes_unresolvable_retrieved_records() -> None:
+    citations = _build_citations(
+        [
+            {"source_file": "case.pdf", "chunk_id": None},
+            {"source_file": "case.pdf", "chunk_id": "chunk-2"},
+        ]
+    )
+    assert [citation["id"] for citation in citations] == ["C1"]
+    assert citations[0]["chunk_id"] == "chunk-2"
 
 
 def test_structured_summary_from_contexts_returns_numbered_lines() -> None:

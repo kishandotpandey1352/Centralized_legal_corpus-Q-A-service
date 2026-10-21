@@ -139,6 +139,11 @@ def _parse_args() -> argparse.Namespace:
         default=1.0,
         help="Minimum per-run pass rate required for success (default: 1.0)",
     )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Run deterministic offline simulations without API calls.",
+    )
     return parser.parse_args()
 
 
@@ -224,6 +229,8 @@ def main() -> int:
             cmd.extend(["--write-timeout-seconds", str(args.write_timeout_seconds)])
         if args.pool_timeout_seconds is not None:
             cmd.extend(["--pool-timeout-seconds", str(args.pool_timeout_seconds)])
+        if args.offline:
+            cmd.append("--offline")
 
         print(f"[{idx}/{args.runs}] Executing: {' '.join(cmd)}")
         completed = subprocess.run(cmd, cwd=runner_script.parent.parent, check=False)
