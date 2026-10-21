@@ -15,6 +15,8 @@ dist/
 .env
 *.env
 
+*.docx
+
 # Local model caches
 .model_cache/
 backend/.model_cache/
