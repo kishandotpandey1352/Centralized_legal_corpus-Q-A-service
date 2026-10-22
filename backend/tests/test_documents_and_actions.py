@@ -25,8 +25,10 @@ class RecordingDb:
     def __init__(self, rows=None):
         self._rows = rows or []
         self.params: dict[str, object] = {}
+        self.calls: list[tuple[object, dict[str, object]]] = []
 
     def execute(self, statement, params=None):
+        self.calls.append((statement, params or {}))
         if "FROM chunks" in str(statement) or "FROM documents" in str(statement):
             self.params.update(params or {})
         return FakeResult(self._rows)
@@ -54,6 +56,58 @@ def test_list_documents_service_returns_metadata_and_counts() -> None:
     assert result[0]["source_file"] == "judgment.pdf"
     assert result[0]["chunk_count"] == 3
     assert result[0]["decision_date"] == "2024-01-01"
+
+
+def test_list_documents_service_empty() -> None:
+    result = ingestion_service.list_documents(RecordingDb([]))
+    assert result == []
+
+
+def test_list_documents_service_multiple() -> None:
+    rows = [
+        {
+            "id": "d2",
+            "source_file": "b.pdf",
+            "document_type": "pdf",
+            "title": "B",
+            "jurisdiction": None,
+            "court": None,
+            "canonical_citation": None,
+            "decision_date": None,
+            "practice_area": None,
+            "created_at": None,
+            "chunk_count": 5,
+        },
+        {
+            "id": "d1",
+            "source_file": "a.txt",
+            "document_type": "txt",
+            "title": "A",
+            "jurisdiction": None,
+            "court": None,
+            "canonical_citation": None,
+            "decision_date": None,
+            "practice_area": None,
+            "created_at": None,
+            "chunk_count": 2,
+        },
+    ]
+    result = ingestion_service.list_documents(RecordingDb(rows))
+    assert len(result) == 2
+    assert {item["document_id"] for item in result} == {"d1", "d2"}
+
+
+def test_list_documents_route_returns_empty_list_without_404(monkeypatch) -> None:
+    monkeypatch.setattr(routes_documents, "list_documents", lambda db: [])
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+
+    response = client.get("/documents")
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json() == {"documents": []}
 
 
 def test_list_documents_route(monkeypatch) -> None:
@@ -85,11 +139,11 @@ def test_retrieve_filters_by_document_id(monkeypatch) -> None:
 def test_answer_passes_document_id_to_retrieval(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_retrieve(db, query: str, top_k: int = 5, **kwargs):
+    def fake_search(db, query: str, candidate_k: int, **kwargs):
         captured.update(kwargs)
-        return {"query": query, "results": []}
+        return []
 
-    monkeypatch.setattr(retrieval_service, "retrieve_similar_chunks", fake_retrieve)
+    monkeypatch.setattr(retrieval_service, "_search_candidates", fake_search)
 
     retrieval_service.answer_question(object(), "What is the filing deadline?", document_id="doc-123")
 
@@ -117,7 +171,7 @@ def test_summarize_by_document_id(monkeypatch) -> None:
     assert result["source_file"] == "judgment.pdf"
 
 
-def test_extract_keywords_returns_structured_list(monkeypatch) -> None:
+def test_extract_key_topics_returns_structured_list(monkeypatch) -> None:
     rows = [{"chunk_text": "Unfair dismissal and procedural fairness.", "source_file": "judgment.pdf"}]
     db = RecordingDb(rows)
     monkeypatch.setattr(
@@ -126,14 +180,59 @@ def test_extract_keywords_returns_structured_list(monkeypatch) -> None:
         lambda **kwargs: '["unfair dismissal", "procedural fairness"]',
     )
 
-    result = retrieval_service.extract_keywords(db, "doc-1", limit=5)
+    result = retrieval_service.extract_key_topics(db, "doc-1", limit=5)
 
     assert result["document_id"] == "doc-1"
     assert result["source_file"] == "judgment.pdf"
-    assert result["keywords"] == ["unfair dismissal", "procedural fairness"]
+    assert result["topics"] == ["unfair dismissal", "procedural fairness"]
 
 
-def test_extract_keywords_falls_back_when_generation_not_strict(monkeypatch) -> None:
+def test_extract_key_topics_filters_generic_terms(monkeypatch) -> None:
+    rows = [{"chunk_text": "A case about procedural fairness and unfair dismissal.", "source_file": "judgment.pdf"}]
+    db = RecordingDb(rows)
+    monkeypatch.setattr(
+        retrieval_service,
+        "generate_answer_with_ollama",
+        lambda **kwargs: '["document", "case", "procedural fairness", "unfair dismissal"]',
+    )
+
+    result = retrieval_service.extract_key_topics(db, "doc-1", limit=5)
+
+    assert "document" not in result["topics"]
+    assert "case" not in result["topics"]
+    assert "procedural fairness" in result["topics"]
+
+
+def test_extract_key_topics_reuses_chunks_without_ingestion_or_embeddings(monkeypatch) -> None:
+    rows = [{"chunk_text": "Unfair dismissal procedural fairness.", "source_file": "judgment.pdf"}]
+    db = RecordingDb(rows)
+    monkeypatch.setattr(
+        retrieval_service,
+        "generate_answer_with_ollama",
+        lambda **kwargs: '["unfair dismissal", "procedural fairness"]',
+    )
+    monkeypatch.setattr(retrieval_service, "embed_texts", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("embed_texts must not run")))
+
+    result = retrieval_service.extract_key_topics(db, "doc-1", limit=5)
+
+    assert result["topics"]
+    # Only the chunk SELECT was issued; no INSERT/UPDATE statements.
+    assert not any("INSERT" in str(statement) for statement, _ in db.calls)
+    assert not any("UPDATE" in str(statement) for statement, _ in db.calls)
+
+
+def test_extract_key_topics_unknown_document_raises(monkeypatch) -> None:
+    db = RecordingDb([])
+
+    try:
+        retrieval_service.extract_key_topics(db, "missing-doc", limit=5)
+    except ValueError as exc:
+        assert "missing-doc" in str(exc)
+    else:
+        raise AssertionError("ValueError was not raised")
+
+
+def test_extract_key_topics_falls_back_when_generation_not_strict(monkeypatch) -> None:
     monkeypatch.setattr(retrieval_service.settings, "generation_strict", False)
     rows = [{"chunk_text": "compensation compensation unfair dismissal", "source_file": "judgment.pdf"}]
     db = RecordingDb(rows)
@@ -143,17 +242,17 @@ def test_extract_keywords_falls_back_when_generation_not_strict(monkeypatch) -> 
 
     monkeypatch.setattr(retrieval_service, "generate_answer_with_ollama", failing_generate)
 
-    result = retrieval_service.extract_keywords(db, "doc-1", limit=5)
+    result = retrieval_service.extract_key_topics(db, "doc-1", limit=5)
 
-    assert result["keywords"]
-    assert "compensation" in result["keywords"]
+    assert result["topics"]
+    assert "compensation" in result["topics"]
 
 
 def test_keywords_route(monkeypatch) -> None:
     monkeypatch.setattr(
         routes_retrieval,
-        "extract_keywords",
-        lambda db, document_id, limit: {"document_id": document_id, "source_file": "a.pdf", "keywords": ["k"]},
+        "extract_key_topics",
+        lambda db, document_id, limit: {"document_id": document_id, "source_file": "a.pdf", "topics": ["k"]},
     )
     app.dependency_overrides[get_db] = lambda: object()
     client = TestClient(app)
@@ -163,4 +262,4 @@ def test_keywords_route(monkeypatch) -> None:
     app.dependency_overrides.clear()
 
     assert response.status_code == 200
-    assert response.json()["keywords"] == ["k"]
+    assert response.json()["topics"] == ["k"]

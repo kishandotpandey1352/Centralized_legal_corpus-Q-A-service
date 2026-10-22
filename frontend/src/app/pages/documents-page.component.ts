@@ -8,7 +8,6 @@ import {
   DocumentSummary,
   IngestionSummary,
   KeywordsResponse,
-  RetrievalResponse,
   SummaryResponse,
 } from '../models';
 import { ApiService } from '../services/api.service';
@@ -30,6 +29,7 @@ export class DocumentsPageComponent {
   readonly documents = signal<DocumentSummary[]>([]);
   readonly listLoading = signal(false);
   readonly listError = signal('');
+  readonly listExpanded = signal(false);
 
   readonly selected = signal<DocumentSummary | null>(null);
   readonly activeAction = signal<Action | null>(null);
@@ -38,8 +38,6 @@ export class DocumentsPageComponent {
   readonly qaLoading = signal(false);
   readonly qaError = signal('');
   readonly qaResult = signal<AnswerResponse | null>(null);
-  readonly evidence = signal<RetrievalResponse | null>(null);
-  readonly evidenceLoading = signal(false);
   readonly evidenceVisible = signal(false);
 
   readonly summaryLoading = signal(false);
@@ -64,7 +62,7 @@ export class DocumentsPageComponent {
         this.reconcileSelection();
       },
       error: (error) => {
-        this.listError.set(this.toErrorMessage(error));
+        this.listError.set(this.toListErrorMessage(error));
         this.listLoading.set(false);
       },
     });
@@ -74,7 +72,12 @@ export class DocumentsPageComponent {
     this.selected.set(this.summaryToDocument(summary));
     this.activeAction.set(null);
     this.resetActions();
+    this.listExpanded.set(false);
     this.loadDocuments();
+  }
+
+  toggleList(): void {
+    this.listExpanded.update((expanded) => !expanded);
   }
 
   selectDocument(document: DocumentSummary): void {
@@ -87,7 +90,6 @@ export class DocumentsPageComponent {
     this.activeAction.set(action);
     this.qaResult.set(null);
     this.qaError.set('');
-    this.evidence.set(null);
     this.evidenceVisible.set(false);
     this.summaryResult.set(null);
     this.summaryError.set('');
@@ -105,7 +107,6 @@ export class DocumentsPageComponent {
     this.qaLoading.set(true);
     this.qaError.set('');
     this.qaResult.set(null);
-    this.evidence.set(null);
     this.evidenceVisible.set(false);
 
     const request = { question, top_k: 5, document_id: document.document_id, rerank: true };
@@ -117,6 +118,7 @@ export class DocumentsPageComponent {
       error: (error) => {
         const message = this.toErrorMessage(error);
         this.qaError.set(message);
+        this.qaLoading.set(false);
         this.history.addEntry(this.history.createEntry('answer', request, null, 'error', message));
       },
       complete: () => this.qaLoading.set(false),
@@ -124,34 +126,7 @@ export class DocumentsPageComponent {
   }
 
   toggleEvidence(): void {
-    if (!this.evidenceVisible()) {
-      this.evidenceVisible.set(true);
-      if (!this.evidence()) {
-        this.loadEvidence();
-      }
-    } else {
-      this.evidenceVisible.set(false);
-    }
-  }
-
-  loadEvidence(): void {
-    const document = this.selected();
-    const question = this.qaQuestion().trim();
-    if (!document || !question) {
-      return;
-    }
-
-    this.evidenceLoading.set(true);
-    this.api.retrieve({ query: question, top_k: 5, document_id: document.document_id, rerank: true }).subscribe({
-      next: (result) => {
-        this.evidence.set(result);
-        this.evidenceLoading.set(false);
-      },
-      error: (error) => {
-        this.qaError.set(this.toErrorMessage(error));
-        this.evidenceLoading.set(false);
-      },
-    });
+    this.evidenceVisible.update((visible) => !visible);
   }
 
   generateSummary(): void {
@@ -173,6 +148,7 @@ export class DocumentsPageComponent {
       error: (error) => {
         const message = this.toErrorMessage(error);
         this.summaryError.set(message);
+        this.summaryLoading.set(false);
         this.history.addEntry(this.history.createEntry('summary', request, null, 'error', message));
       },
       complete: () => this.summaryLoading.set(false),
@@ -196,8 +172,9 @@ export class DocumentsPageComponent {
         this.history.addEntry(this.history.createEntry('keywords', request, result, 'success'));
       },
       error: (error) => {
-        const message = this.toErrorMessage(error);
+        const message = this.toTopicsErrorMessage(error);
         this.keywordsError.set(message);
+        this.keywordsLoading.set(false);
         this.history.addEntry(this.history.createEntry('keywords', request, null, 'error', message));
       },
       complete: () => this.keywordsLoading.set(false),
@@ -246,7 +223,6 @@ export class DocumentsPageComponent {
     this.qaQuestion.set('');
     this.qaResult.set(null);
     this.qaError.set('');
-    this.evidence.set(null);
     this.evidenceVisible.set(false);
     this.summaryResult.set(null);
     this.summaryError.set('');
@@ -265,5 +241,33 @@ export class DocumentsPageComponent {
       }
     }
     return 'Request failed. Confirm backend is running on http://localhost:8000.';
+  }
+
+  private toListErrorMessage(error: unknown): string {
+    const status = (error as { status?: number })?.status;
+    if (status && status >= 400 && status < 500) {
+      const payload = (error as { error?: unknown })?.error;
+      if (typeof payload === 'string') {
+        return payload;
+      }
+      if (typeof payload === 'object' && payload !== null && 'detail' in payload) {
+        return String((payload as { detail?: unknown }).detail ?? 'Request failed');
+      }
+    }
+    return 'Unable to load indexed documents. Check that the backend is available.';
+  }
+
+  private toTopicsErrorMessage(error: unknown): string {
+    const status = (error as { status?: number })?.status;
+    if (status && status >= 400 && status < 500) {
+      const payload = (error as { error?: unknown })?.error;
+      if (typeof payload === 'string') {
+        return payload;
+      }
+      if (typeof payload === 'object' && payload !== null && 'detail' in payload) {
+        return String((payload as { detail?: unknown }).detail ?? 'Request failed');
+      }
+    }
+    return 'Unable to extract key topics. Please try again.';
   }
 }

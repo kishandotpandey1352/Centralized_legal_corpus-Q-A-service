@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     summary_default_chunks: int = 6
     max_upload_size_mb: int = 25
 
+    # Two-stage retrieval: candidate retrieval -> final evidence selection.
+    retrieval_candidate_k: int = 10
+    rag_context_top_k: int = 3
+    # Optional project-calibrated final-relevance cutoff. None = permissive
+    # (rely on top-K + existing abstention logic). This is NOT a universal
+    # cosine-similarity threshold.
+    rag_min_relevance_score: float | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

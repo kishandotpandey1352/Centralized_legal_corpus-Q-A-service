@@ -87,7 +87,7 @@ export interface DocumentListResponse {
 export interface KeywordsResponse {
   document_id: string;
   source_file: string;
-  keywords: string[];
+  topics: string[];
 }
 
 export interface RetrievedChunk {
@@ -134,6 +134,9 @@ export interface AnswerResponse {
   answer: string;
   citations: Citation[];
   mode?: string;
+  evidence?: RetrievedChunk[];
+  candidates_retrieved?: number;
+  context_chunks?: number;
 }
 
 export interface SummaryResponse {
@@ -145,21 +148,36 @@ export interface SummaryResponse {
   mode: string;
 }
 
-export interface EvaluationMetrics {
-  faithfulness: number;
-  answer_correctness: number;
-  retrieval_recall_at_5: number;
-  abstention_accuracy: number;
-  hallucination_rate: number;
-  invalid_citation_rate: number;
-  latency_p95_ms: number;
+export interface EvaluationLatestMetrics {
+  faithfulness?: number | null;
+  answer_correctness?: number | null;
+  recall_at_5?: number | null;
+  abstention_accuracy?: number | null;
+  hallucination_rate?: number | null;
+  invalid_citation_rate?: number | null;
+  p95_latency_ms?: number | null;
 }
 
-export interface EvaluationScoreResponse {
-  overall_score: number;
-  latency_penalty: number;
-  gates: Record<string, boolean>;
-  pass_fail: 'pass' | 'fail';
+export interface EvaluationGateDefinition {
+  key: string;
+  label: string;
+  threshold: string;
+  informational: boolean;
+}
+
+export interface EvaluationLatest {
+  available: boolean;
+  run_id?: string | null;
+  mode?: string | null;
+  eval_source?: string | null;
+  created_at?: string | null;
+  total_cases?: number | null;
+  metrics?: EvaluationLatestMetrics;
+  overall_score?: number | null;
+  gates?: Record<string, boolean> | null;
+  gate_definitions?: EvaluationGateDefinition[];
+  failed_gates?: string[];
+  status?: 'pass' | 'fail' | null;
 }
 
 export interface RunHistoryEntry {

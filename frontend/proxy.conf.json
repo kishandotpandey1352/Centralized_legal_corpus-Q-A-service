@@ -1,15 +1,15 @@
 {
-  "/query/retrieve": {
+  "/query": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true
   },
-  "/query/answer": {
+  "/ingest": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true
   },
-  "/query/summary": {
+  "/documents": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true
@@ -20,11 +20,6 @@
     "changeOrigin": true
   },
   "/health": {
-    "target": "http://localhost:8000",
-    "secure": false,
-    "changeOrigin": true
-  },
-  "/ingest": {
     "target": "http://localhost:8000",
     "secure": false,
     "changeOrigin": true

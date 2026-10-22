@@ -17,44 +17,36 @@
 .doc-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0.5rem 0 0;
   display: grid;
-  gap: 0.7rem;
+  gap: 0.35rem;
 }
 
-.doc-card {
+.doc-row {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
+  text-align: left;
   border: 1px solid rgba(20, 55, 62, 0.14);
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   background: #fffefb;
-  padding: 0.8rem 1rem;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
 }
 
-.doc-card.active {
+.doc-row.active {
   border-color: #1e6f74;
-  box-shadow: 0 0 0 1px rgba(30, 111, 116, 0.35);
+  background: rgba(30, 111, 116, 0.06);
 }
 
 .doc-title {
   margin: 0 0 0.25rem;
   font-weight: 700;
   color: #183942;
-}
-
-.doc-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.ghost.small {
-  margin-top: 0;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.85rem;
 }
 
 .selected-block {
@@ -84,6 +76,37 @@
   background: linear-gradient(130deg, #1e6f74 0%, #184a59 100%);
   color: #fff;
   border-color: transparent;
+}
+
+.tab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.indexed-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(19, 49, 56, 0.15);
+  padding-top: 1rem;
+}
+
+.collapse-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #183942;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+.chevron {
+  font-size: 1.1rem;
+  color: #45616c;
 }
 
 .action-panel {

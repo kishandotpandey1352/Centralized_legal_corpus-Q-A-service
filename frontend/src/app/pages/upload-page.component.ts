@@ -94,6 +94,7 @@ export class UploadPageComponent {
       },
       error: (error) => {
         this.error.set(this.toErrorMessage(error));
+        this.loading.set(false);
       },
       complete: () => {
         this.loading.set(false);

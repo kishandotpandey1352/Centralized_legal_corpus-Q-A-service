@@ -52,11 +52,10 @@ def _rerank_results(
 
     lexical_weight = max(0.0, min(lexical_weight, 1.0))
     vector_weight = 1.0 - lexical_weight
-    terms = _question_terms(query)
 
     rescored: list[dict[str, Any]] = []
     for item in candidates:
-        lexical_score = _chunk_overlap_ratio(terms, str(item.get("chunk_text", ""))) if terms else 0.0
+        lexical_score = _lexical_relevance(query, str(item.get("chunk_text", "")))
         vector_score = _normalize_vector_score(item.get("score"))
         hybrid_score = (vector_weight * vector_score) + (lexical_weight * lexical_score)
 
@@ -76,28 +75,24 @@ def _rerank_results(
     return rescored[:top_k]
 
 
-def retrieve_similar_chunks(
+def _search_candidates(
     db: Session,
     query: str,
-    top_k: int = 5,
+    candidate_k: int,
+    *,
     source_file: str | None = None,
     document_id: str | None = None,
     document_type: str | None = None,
     jurisdiction: str | None = None,
     court: str | None = None,
     canonical_citation: str | None = None,
-    decision_date: str | date | None = None,
+    decision_date: date | None = None,
     practice_area: str | None = None,
     rerank: bool = True,
-    candidate_pool_size: int | None = None,
-) -> dict[str, object]:
-    cleaned_query = query.strip()
-    if not cleaned_query:
-        raise ValueError("Query cannot be empty")
-
-    top_k = max(1, min(top_k, 20))
+) -> list[dict[str, Any]]:
+    """Stage 1: dense candidate retrieval over pgvector, optionally reranked."""
     query_embedding = embed_texts(
-        [cleaned_query],
+        [query],
         model_name=settings.embedding_model,
         backend=settings.embedding_backend,
         cache_dir=settings.embedding_cache_dir,
@@ -109,36 +104,24 @@ def retrieve_similar_chunks(
     db.execute(text("SET LOCAL enable_bitmapscan = off"))
     db.execute(text("SET LOCAL ivfflat.probes = 10"))
 
-    cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
-    cleaned_document_id = document_id.strip() if isinstance(document_id, str) and document_id.strip() else None
-    cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
-    cleaned_jurisdiction = jurisdiction.strip() if isinstance(jurisdiction, str) and jurisdiction.strip() else None
-    cleaned_court = court.strip() if isinstance(court, str) and court.strip() else None
-    cleaned_citation = canonical_citation.strip() if isinstance(canonical_citation, str) and canonical_citation.strip() else None
-    cleaned_decision_date = _normalize_decision_date(decision_date)
-    cleaned_practice_area = practice_area.strip() if isinstance(practice_area, str) and practice_area.strip() else None
-
-    pool_size = candidate_pool_size if candidate_pool_size is not None else top_k * 4
-    pool_size = max(top_k, min(pool_size, 100))
-
     where_clauses = ["c.embedding IS NOT NULL"]
-    sql_params: dict[str, Any] = {"query_vector": query_vector, "candidate_pool": pool_size}
+    sql_params: dict[str, Any] = {"query_vector": query_vector, "candidate_pool": candidate_k}
 
-    if cleaned_source_file:
+    if source_file:
         where_clauses.append("d.source_file = :source_file")
-        sql_params["source_file"] = cleaned_source_file
-    if cleaned_document_id:
+        sql_params["source_file"] = source_file
+    if document_id:
         where_clauses.append("c.document_id = :document_id")
-        sql_params["document_id"] = cleaned_document_id
-    if cleaned_document_type:
+        sql_params["document_id"] = document_id
+    if document_type:
         where_clauses.append("d.document_type = :document_type")
-        sql_params["document_type"] = cleaned_document_type
+        sql_params["document_type"] = document_type
     metadata_filters = {
-        "jurisdiction": cleaned_jurisdiction,
-        "court": cleaned_court,
-        "canonical_citation": cleaned_citation,
-        "decision_date": cleaned_decision_date.isoformat() if cleaned_decision_date else None,
-        "practice_area": cleaned_practice_area,
+        "jurisdiction": jurisdiction,
+        "court": court,
+        "canonical_citation": canonical_citation,
+        "decision_date": decision_date.isoformat() if decision_date else None,
+        "practice_area": practice_area,
     }
     for field, value in metadata_filters.items():
         if value:
@@ -170,7 +153,7 @@ def retrieve_similar_chunks(
 
     rows = db.execute(text(sql_query), sql_params).mappings().all()
 
-    candidate_results = [
+    candidates = [
         {
             "chunk_id": str(row["id"]),
             "document_id": str(row["document_id"]),
@@ -191,14 +174,78 @@ def retrieve_similar_chunks(
     ]
 
     if rerank:
-        final_results = _rerank_results(
-            query=cleaned_query,
-            candidates=candidate_results,
-            top_k=top_k,
+        return _rerank_results(
+            query=query,
+            candidates=candidates,
+            top_k=candidate_k,
             lexical_weight=settings.qa_rerank_lexical_weight,
         )
-    else:
-        final_results = candidate_results[:top_k]
+    return candidates
+
+
+def _select_final_context(
+    candidates: list[dict[str, Any]],
+    top_k: int,
+    min_relevance_score: float | None,
+) -> list[dict[str, Any]]:
+    """Stage 2: keep only the strongest reranked evidence for generation."""
+    ranked = sorted(
+        candidates,
+        key=lambda row: (float(row.get("hybrid_score", 0.0)), float(row.get("vector_score", 0.0))),
+        reverse=True,
+    )
+    if min_relevance_score is not None:
+        ranked = [row for row in ranked if float(row.get("hybrid_score", 0.0)) >= min_relevance_score]
+    return ranked[:top_k]
+
+
+def retrieve_similar_chunks(
+    db: Session,
+    query: str,
+    top_k: int = 5,
+    source_file: str | None = None,
+    document_id: str | None = None,
+    document_type: str | None = None,
+    jurisdiction: str | None = None,
+    court: str | None = None,
+    canonical_citation: str | None = None,
+    decision_date: str | date | None = None,
+    practice_area: str | None = None,
+    rerank: bool = True,
+    candidate_pool_size: int | None = None,
+) -> dict[str, object]:
+    cleaned_query = query.strip()
+    if not cleaned_query:
+        raise ValueError("Query cannot be empty")
+
+    top_k = max(1, min(top_k, 20))
+
+    cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
+    cleaned_document_id = document_id.strip() if isinstance(document_id, str) and document_id.strip() else None
+    cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
+    cleaned_jurisdiction = jurisdiction.strip() if isinstance(jurisdiction, str) and jurisdiction.strip() else None
+    cleaned_court = court.strip() if isinstance(court, str) and court.strip() else None
+    cleaned_citation = canonical_citation.strip() if isinstance(canonical_citation, str) and canonical_citation.strip() else None
+    cleaned_decision_date = _normalize_decision_date(decision_date)
+    cleaned_practice_area = practice_area.strip() if isinstance(practice_area, str) and practice_area.strip() else None
+
+    pool_size = candidate_pool_size if candidate_pool_size is not None else max(settings.retrieval_candidate_k, top_k)
+    pool_size = max(top_k, min(pool_size, 100))
+
+    ranked = _search_candidates(
+        db,
+        cleaned_query,
+        pool_size,
+        source_file=cleaned_source_file,
+        document_id=cleaned_document_id,
+        document_type=cleaned_document_type,
+        jurisdiction=cleaned_jurisdiction,
+        court=cleaned_court,
+        canonical_citation=cleaned_citation,
+        decision_date=cleaned_decision_date,
+        practice_area=cleaned_practice_area,
+        rerank=rerank,
+    )
 
     return {
         "query": cleaned_query,
@@ -213,7 +260,7 @@ def retrieve_similar_chunks(
         "practice_area": cleaned_practice_area,
         "rerank_enabled": rerank,
         "candidate_pool_size": pool_size,
-        "results": final_results,
+        "results": ranked[:top_k],
     }
 
 
@@ -279,67 +326,106 @@ def _should_force_cited_answer(*, top_score: float, has_forced_keyword: bool, mi
     return has_forced_keyword and top_score >= min_score
 
 
-def _question_terms(question: str) -> set[str]:
-    stopwords = {
-        "what",
-        "which",
-        "when",
-        "where",
-        "who",
-        "why",
-        "how",
-        "is",
-        "the",
-        "a",
-        "an",
-        "in",
-        "on",
-        "for",
-        "to",
-        "of",
-        "and",
-        "or",
-        "with",
-        "from",
-        "before",
-        "after",
-    }
+_STOPWORDS = {
+    "what",
+    "which",
+    "when",
+    "where",
+    "who",
+    "why",
+    "how",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "do",
+    "does",
+    "did",
+    "have",
+    "has",
+    "had",
+    "the",
+    "a",
+    "an",
+    "in",
+    "on",
+    "at",
+    "for",
+    "to",
+    "of",
+    "and",
+    "or",
+    "with",
+    "from",
+    "by",
+    "about",
+    "before",
+    "after",
+    "between",
+    "into",
+    "their",
+    "there",
+    "these",
+    "those",
+    "should",
+    "would",
+    "could",
+    "can",
+    "may",
+    "must",
+    "doesn",
+    "don",
+}
+
+
+def _question_terms(question: str) -> list[str]:
     tokens = re.findall(r"[a-zA-Z0-9]+", question.lower())
-    return {token for token in tokens if len(token) > 2 and token not in stopwords}
+    return [token for token in tokens if len(token) > 2 and token not in _STOPWORDS]
 
 
-def _chunk_overlap_ratio(terms: set[str], chunk_text: str) -> float:
-    if not terms:
+def _question_phrases(question: str) -> list[str]:
+    terms = _question_terms(question)
+    phrases: list[str] = []
+    for size in (2, 3):
+        for index in range(len(terms) - size + 1):
+            phrases.append(" ".join(terms[index : index + size]))
+    return phrases
+
+
+def _lexical_relevance(question: str, chunk_text: str) -> float:
+    terms = _question_terms(question)
+    phrases = _question_phrases(question)
+    if not terms and not phrases:
         return 0.0
+
     text = chunk_text.lower()
-    hits = 0
-    for term in terms:
-        if term in text:
-            hits += 1
-    return hits / len(terms)
+    term_hits = sum(1 for term in terms if term in text)
+    phrase_hits = sum(1 for phrase in phrases if phrase in text)
+    total = len(terms) + len(phrases)
+    return (term_hits + phrase_hits) / total if total else 0.0
 
 
 def _lexical_confidence(question: str, results: list[dict[str, Any]]) -> float:
-    terms = _question_terms(question)
-    if not terms or not results:
+    if not results:
         return 0.0
     best = 0.0
     for item in results[:3]:
-        ratio = _chunk_overlap_ratio(terms, str(item.get("chunk_text", "")))
+        ratio = _lexical_relevance(question, str(item.get("chunk_text", "")))
         if ratio > best:
             best = ratio
     return best
 
 
 def _best_overlap_chunk(question: str, results: list[dict[str, Any]]) -> dict[str, Any] | None:
-    terms = _question_terms(question)
-    if not terms:
-        return results[0] if results else None
+    if not results:
+        return None
 
     best_item: dict[str, Any] | None = None
     best_ratio = -1.0
     for item in results[:3]:
-        ratio = _chunk_overlap_ratio(terms, str(item.get("chunk_text", "")))
+        ratio = _lexical_relevance(question, str(item.get("chunk_text", "")))
         if ratio > best_ratio:
             best_ratio = ratio
             best_item = item
@@ -355,7 +441,6 @@ def _direct_cited_answer(question: str, results: list[dict[str, Any]]) -> str:
     if not chunk_text:
         return "Insufficient evidence in provided documents."
 
-    terms = _question_terms(question)
     sentences = [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", chunk_text) if segment.strip()]
     if not sentences:
         sentences = [chunk_text]
@@ -363,7 +448,7 @@ def _direct_cited_answer(question: str, results: list[dict[str, Any]]) -> str:
     best_sentence = sentences[0]
     best_ratio = -1.0
     for sentence in sentences:
-        ratio = _chunk_overlap_ratio(terms, sentence)
+        ratio = _lexical_relevance(question, sentence)
         if ratio > best_ratio:
             best_ratio = ratio
             best_sentence = sentence
@@ -651,46 +736,62 @@ def answer_question(
     if not cleaned_question:
         raise ValueError("Question cannot be empty")
 
-    retrieval_kwargs: dict[str, Any] = {
-        "source_file": source_file,
-        "document_id": document_id,
-        "document_type": document_type,
-        "jurisdiction": jurisdiction,
-        "court": court,
-        "canonical_citation": canonical_citation,
-        "decision_date": decision_date,
-        "practice_area": practice_area,
-        "rerank": rerank,
-        "candidate_pool_size": candidate_pool_size,
-    }
-    retrieval = retrieve_similar_chunks(
-        db=db,
-        query=cleaned_question,
-        top_k=top_k,
-        **{
-            key: value
-            for key, value in retrieval_kwargs.items()
-            if value is not None or key == "rerank"
-        },
+    cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
+    cleaned_document_id = document_id.strip() if isinstance(document_id, str) and document_id.strip() else None
+    cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
+    cleaned_jurisdiction = jurisdiction.strip() if isinstance(jurisdiction, str) and jurisdiction.strip() else None
+    cleaned_court = court.strip() if isinstance(court, str) and court.strip() else None
+    cleaned_citation = canonical_citation.strip() if isinstance(canonical_citation, str) and canonical_citation.strip() else None
+    cleaned_decision_date = _normalize_decision_date(decision_date)
+    cleaned_practice_area = practice_area.strip() if isinstance(practice_area, str) and practice_area.strip() else None
+
+    candidate_k = candidate_pool_size if candidate_pool_size is not None else max(settings.retrieval_candidate_k, settings.rag_context_top_k)
+    candidate_k = max(settings.rag_context_top_k, min(candidate_k, 100))
+
+    candidates = _search_candidates(
+        db,
+        cleaned_question,
+        candidate_k,
+        source_file=cleaned_source_file,
+        document_id=cleaned_document_id,
+        document_type=cleaned_document_type,
+        jurisdiction=cleaned_jurisdiction,
+        court=cleaned_court,
+        canonical_citation=cleaned_citation,
+        decision_date=cleaned_decision_date,
+        practice_area=cleaned_practice_area,
+        rerank=rerank,
     )
-    results = retrieval.get("results", [])
-    citations = _build_citations(results)
+
+    final_context = _select_final_context(
+        candidates,
+        settings.rag_context_top_k,
+        settings.rag_min_relevance_score,
+    )
+    citations = _build_citations(final_context)
     answer_min_inline = 2 if len(citations) >= 2 else 1
 
-    if not results:
+    diagnostics: dict[str, Any] = {
+        "candidates_retrieved": len(candidates),
+        "context_chunks": len(final_context),
+    }
+
+    if not final_context:
         return {
             "question": cleaned_question,
             "answer": "Insufficient evidence in provided documents.",
             "citations": [],
             "used_chunks": 0,
             "mode": "no-context",
+            "evidence": [],
+            **diagnostics,
         }
 
-    enriched_results = _attach_adjacent_context(db, results)
-    top_score_raw = _top_score(results)
+    enriched_results = _attach_adjacent_context(db, final_context)
+    top_score_raw = _top_score(final_context)
     lexical_conf = _lexical_confidence(cleaned_question, enriched_results)
     top_score = min(top_score_raw, lexical_conf if lexical_conf > 0 else top_score_raw)
-    has_forced_keyword = _contains_force_keyword(results, settings.qa_force_keyword)
+    has_forced_keyword = _contains_force_keyword(final_context, settings.qa_force_keyword)
     force_cited = _should_force_cited_answer(
         top_score=top_score,
         has_forced_keyword=has_forced_keyword,
@@ -707,11 +808,13 @@ def answer_question(
                 min_required=answer_min_inline,
             ),
             "citations": citations,
-            "used_chunks": len(results),
+            "used_chunks": len(final_context),
             "mode": "evidence-direct",
+            "evidence": final_context,
             "top_score": round(top_score, 6),
             "raw_top_score": round(top_score_raw, 6),
             "lexical_confidence": round(lexical_conf, 6),
+            **diagnostics,
         }
 
     if force_cited:
@@ -723,11 +826,13 @@ def answer_question(
                 min_required=answer_min_inline,
             ),
             "citations": citations,
-            "used_chunks": len(results),
+            "used_chunks": len(final_context),
             "mode": "forced-cited",
+            "evidence": final_context,
             "top_score": round(top_score, 6),
             "raw_top_score": round(top_score_raw, 6),
             "lexical_confidence": round(lexical_conf, 6),
+            **diagnostics,
         }
 
     if not confident_enough:
@@ -739,11 +844,13 @@ def answer_question(
                 min_required=answer_min_inline,
             ),
             "citations": citations,
-            "used_chunks": len(results),
+            "used_chunks": len(final_context),
             "mode": "low-confidence",
+            "evidence": final_context,
             "top_score": round(top_score, 6),
             "raw_top_score": round(top_score_raw, 6),
             "lexical_confidence": round(lexical_conf, 6),
+            **diagnostics,
         }
 
     prompt = build_grounded_prompt(cleaned_question, enriched_results)
@@ -778,14 +885,17 @@ def answer_question(
         "question": cleaned_question,
         "answer": answer_text,
         "citations": citations,
-        "used_chunks": len(results),
+        "used_chunks": len(final_context),
         "mode": mode,
-        "source_file_filter": retrieval.get("source_file"),
-        "document_type_filter": retrieval.get("document_type"),
-        "rerank_enabled": retrieval.get("rerank_enabled", rerank),
+        "evidence": final_context,
+        "source_file_filter": cleaned_source_file,
+        "document_id_filter": cleaned_document_id,
+        "document_type_filter": cleaned_document_type,
+        "rerank_enabled": rerank,
         "top_score": round(top_score, 6),
         "raw_top_score": round(top_score_raw, 6),
         "lexical_confidence": round(lexical_conf, 6),
+        **diagnostics,
     }
 
 
@@ -941,10 +1051,80 @@ _KEYWORD_STOPWORDS = {
     "all",
     "may",
     "must",
+    "document",
+    "documents",
+    "legal",
+    "law",
+    "laws",
+    "case",
+    "cases",
+    "court",
+    "courts",
+    "information",
+    "agreement",
+    "contract",
+    "party",
+    "parties",
+    "section",
+    "sections",
+    "clause",
+    "clauses",
+    "term",
+    "terms",
+    "provision",
+    "provisions",
 }
 
+_GENERIC_TOPIC_TERMS = {
+    "document",
+    "documents",
+    "legal",
+    "law",
+    "laws",
+    "case",
+    "cases",
+    "court",
+    "courts",
+    "information",
+    "agreement",
+    "contract",
+    "party",
+    "parties",
+    "section",
+    "sections",
+    "clause",
+    "clauses",
+    "term",
+    "terms",
+    "provision",
+    "provisions",
+}
 
-def _parse_keyword_json(raw: str, limit: int) -> list[str] | None:
+_TOPIC_CHUNK_LIMIT = 24
+_TOPIC_CONTEXT_CHAR_LIMIT = 24000
+
+
+def _clean_topics(topics: list[str], limit: int) -> list[str]:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for topic in topics:
+        normalized = " ".join(topic.strip().lower().split())
+        if (
+            not normalized
+            or len(normalized) < 4
+            or len(normalized) > 80
+            or normalized in _GENERIC_TOPIC_TERMS
+            or normalized in seen
+        ):
+            continue
+        seen.add(normalized)
+        cleaned.append(topic.strip())
+        if len(cleaned) >= limit:
+            break
+    return cleaned
+
+
+def _parse_topics_json(raw: str, limit: int) -> list[str] | None:
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.IGNORECASE).strip()
     match = re.search(r"\[.*\]", cleaned, flags=re.DOTALL)
     if not match:
@@ -956,28 +1136,30 @@ def _parse_keyword_json(raw: str, limit: int) -> list[str] | None:
     if not isinstance(data, list):
         return None
 
-    keywords: list[str] = []
+    topics: list[str] = []
     for item in data:
         if isinstance(item, str):
-            keywords.append(item.strip())
+            topics.append(item.strip())
         elif isinstance(item, dict):
-            value = item.get("keyword") or item.get("phrase") or item.get("term")
+            value = item.get("topic") or item.get("keyword") or item.get("phrase") or item.get("term")
             if isinstance(value, str):
-                keywords.append(value.strip())
-    keywords = [keyword for keyword in keywords if keyword][:limit]
-    return keywords or None
+                topics.append(value.strip())
+    return _clean_topics(topics, limit) or None
 
 
-def _fallback_keywords(context: str, limit: int) -> list[str]:
+def _fallback_topics(context: str, limit: int) -> list[str]:
     tokens = re.findall(r"[a-zA-Z][a-zA-Z'-]{3,}", context.lower())
     counts = Counter(token for token in tokens if token not in _KEYWORD_STOPWORDS)
-    return [word for word, _ in counts.most_common(limit)]
+    topics = [word for word, _ in counts.most_common(limit * 2)]
+    return _clean_topics(topics, limit) or [word for word, _ in counts.most_common(limit)]
 
 
-def extract_keywords(db: Session, document_id: str, limit: int = 5) -> dict[str, Any]:
+def extract_key_topics(db: Session, document_id: str, limit: int = 5) -> dict[str, Any]:
     cleaned_document_id = document_id.strip()
     if not cleaned_document_id:
         raise ValueError("document_id cannot be empty")
+
+    limit = max(1, min(limit, 10))
 
     rows = db.execute(
         text(
@@ -990,28 +1172,45 @@ def extract_keywords(db: Session, document_id: str, limit: int = 5) -> dict[str,
             LIMIT :chunk_limit
             """
         ),
-        {"document_id": cleaned_document_id, "chunk_limit": 40},
+        {"document_id": cleaned_document_id, "chunk_limit": _TOPIC_CHUNK_LIMIT},
     ).mappings().all()
 
     if not rows:
         raise ValueError(f"No chunks found for document_id='{cleaned_document_id}'")
 
     source_file = rows[0]["source_file"]
-    context = "\n\n".join(str(row["chunk_text"]) for row in rows)
+
+    context_parts: list[str] = []
+    total_chars = 0
+    for row in rows:
+        chunk_text = str(row["chunk_text"]).strip()
+        if not chunk_text:
+            continue
+        remaining = _TOPIC_CONTEXT_CHAR_LIMIT - total_chars
+        if remaining <= 0:
+            break
+        part = chunk_text[:remaining]
+        context_parts.append(part)
+        total_chars += len(part)
+    context = "\n\n".join(context_parts)
+
     prompt = (
-        "You are a legal assistant. Extract the most important legal key concepts "
-        "and phrases from the provided document text.\n"
+        "You are a legal assistant. Extract 5 to 10 of the most important legal "
+        "or domain-specific concepts from the supplied document content.\n"
         "Rules:\n"
-        "1) Use only the provided text.\n"
-        "2) Return ONLY a JSON array of short key phrases, for example "
-        '["procedural fairness", "unfair dismissal", "compensation"].\n'
-        f"3) Return between 5 and 10 items. Limit to {limit} items.\n"
-        "4) Do not add prose, commentary, or markdown outside the JSON array.\n\n"
-        f"Document text:\n{context}\n\n"
+        "1) Use only the supplied content.\n"
+        "2) Each topic must be directly supported by the document.\n"
+        "3) Prefer meaningful multi-word concepts where appropriate, for example "
+        "'procedural fairness' or 'data retention'.\n"
+        "4) Do not return generic terms such as 'document', 'law', 'case', or 'information'.\n"
+        "5) Do not invent concepts not supported by the document.\n"
+        "6) Return structured JSON only: an array of short phrases.\n"
+        f"7) Return between 5 and 10 items; limit to {limit}.\n\n"
+        f"Document content:\n{context}\n\n"
         "Return only the JSON array."
     )
 
-    keywords: list[str]
+    topics: list[str]
     try:
         raw = generate_answer_with_ollama(
             base_url=settings.ollama_base_url,
@@ -1019,16 +1218,16 @@ def extract_keywords(db: Session, document_id: str, limit: int = 5) -> dict[str,
             prompt=prompt,
             timeout_seconds=settings.generation_timeout_seconds,
         )
-        keywords = _parse_keyword_json(raw, limit)
-        if not keywords:
-            raise ValueError("LLM did not return valid keyword JSON")
+        topics = _parse_topics_json(raw, limit)
+        if not topics:
+            raise ValueError("LLM did not return valid topic JSON")
     except Exception:
         if settings.generation_strict:
             raise
-        keywords = _fallback_keywords(context, limit)
+        topics = _fallback_topics(context, limit)
 
     return {
         "document_id": cleaned_document_id,
         "source_file": source_file,
-        "keywords": keywords,
+        "topics": topics,
     }

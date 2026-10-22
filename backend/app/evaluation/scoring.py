@@ -22,15 +22,46 @@ def latency_penalty(latency_p95_ms: int) -> float:
     return 0.05
 
 
+GATE_DEFINITIONS: tuple[tuple[str, str, str, float, str | None], ...] = (
+    ("faithfulness", "Faithfulness", ">=", 0.75, None),
+    ("answer_correctness", "Answer correctness", ">=", 0.70, None),
+    ("retrieval_recall_at_5", "Recall@5", ">=", 0.65, None),
+    ("hallucination_rate", "Hallucination rate", "<=", 0.12, None),
+    ("invalid_citation_rate", "Invalid citation rate", "<=", 0.10, None),
+    ("latency_p95_ms", "p95 latency", "<=", 5000, "ms"),
+)
+
+
 def pass_fail_gates(metrics: ExperimentMetrics) -> dict[str, bool]:
-    return {
-        "faithfulness": metrics.faithfulness >= 0.75,
-        "answer_correctness": metrics.answer_correctness >= 0.70,
-        "retrieval_recall_at_5": metrics.retrieval_recall_at_5 >= 0.65,
-        "hallucination_rate": metrics.hallucination_rate <= 0.12,
-        "invalid_citation_rate": metrics.invalid_citation_rate <= 0.10,
-        "latency_p95_ms": metrics.latency_p95_ms <= 5000,
-    }
+    gates: dict[str, bool] = {}
+    for key, _label, operator, threshold, _unit in GATE_DEFINITIONS:
+        value = getattr(metrics, key)
+        gates[key] = value >= threshold if operator == ">=" else value <= threshold
+    return gates
+
+
+def evaluation_gate_definitions() -> list[dict[str, object]]:
+    definitions: list[dict[str, object]] = []
+    for key, label, operator, threshold, unit in GATE_DEFINITIONS:
+        unit_suffix = f" {unit}" if unit else ""
+        formatted_threshold = f"{threshold:.2f}" if isinstance(threshold, float) else str(threshold)
+        definitions.append(
+            {
+                "key": key,
+                "label": label,
+                "threshold": f"{operator} {formatted_threshold}{unit_suffix}",
+                "informational": False,
+            }
+        )
+    definitions.append(
+        {
+            "key": "abstention_accuracy",
+            "label": "Abstention accuracy",
+            "threshold": "Informational",
+            "informational": True,
+        }
+    )
+    return definitions
 
 
 def compute_overall_score(metrics: ExperimentMetrics) -> dict[str, object]:

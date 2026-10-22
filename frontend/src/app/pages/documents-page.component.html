@@ -1,175 +1,197 @@
 <section class="panel">
   <h2>Documents</h2>
   <p class="subtitle">
-    Upload a legal document, then ask questions, summarize it, or extract key legal concepts.
+    Upload a legal document, then ask questions, summarize it, or extract key topics.
   </p>
 
   <app-upload-page (indexed)="onIndexed($event)"></app-upload-page>
 
-  <h3 class="section-heading">Indexed Documents</h3>
+  <div class="selected-block" data-testid="selected-document">
+    <h3 class="section-heading">Selected Document</h3>
 
-  @if (listLoading()) {
-    <p class="empty">Loading indexed documents…</p>
-  } @else if (listError()) {
-    <p class="error">{{ listError() }}</p>
-  } @else if (documents().length === 0) {
-    <p class="empty">No indexed documents yet.</p>
-    <p class="empty">Upload a PDF, DOCX or TXT document to get started.</p>
-  }
-
-  <ul class="doc-list" data-testid="documents-list">
-    @for (document of documents(); track document.document_id) {
-      <li class="doc-card" [class.active]="selected()?.document_id === document.document_id">
-        <div class="doc-info">
-          <p class="doc-title" data-testid="document-title">{{ document.source_file }}</p>
-          <p class="meta">{{ document.document_type | uppercase }} · {{ document.chunk_count }} chunks</p>
-          @if (metadataLine(document)) {
-            <p class="meta">{{ metadataLine(document) }}</p>
-          }
-        </div>
-        <div class="doc-actions">
-          <button type="button" class="ghost small" (click)="selectDocument(document); selectAction('qa')" data-testid="doc-qa-button">Ask Q&amp;A</button>
-          <button type="button" class="ghost small" (click)="selectDocument(document); selectAction('summary')" data-testid="doc-summary-button">Summarize</button>
-          <button type="button" class="ghost small" (click)="selectDocument(document); selectAction('keywords')" data-testid="doc-keywords-button">Keywords</button>
-        </div>
-      </li>
-    }
-  </ul>
-
-  @if (selected(); as document) {
-    <div class="selected-block" data-testid="selected-document">
-      <h3 class="section-heading">Selected Document</h3>
+    @if (selected(); as document) {
       <p class="doc-title">{{ document.source_file }}</p>
-
-      <div class="action-tabs">
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeAction() === 'qa'"
-          (click)="selectAction('qa')"
-          data-testid="action-qa"
-        >Ask Q&amp;A</button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeAction() === 'summary'"
-          (click)="selectAction('summary')"
-          data-testid="action-summary"
-        >Summarize</button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="activeAction() === 'keywords'"
-          (click)="selectAction('keywords')"
-          data-testid="action-keywords"
-        >Keywords</button>
-      </div>
-
-      @if (activeAction() === 'qa') {
-        <div class="action-panel" data-testid="qa-panel">
-          <label>
-            Question
-            <textarea
-              rows="2"
-              [ngModel]="qaQuestion()"
-              (ngModelChange)="qaQuestion.set($event)"
-              placeholder="Ask a question about this document"
-              data-testid="qa-input"
-            ></textarea>
-          </label>
-          <button type="button" class="primary" (click)="ask()" [disabled]="qaLoading() || !qaQuestion().trim()" data-testid="qa-run-button">
-            {{ qaLoading() ? 'Searching evidence and generating answer…' : 'Ask' }}
-          </button>
-
-          @if (qaError()) {
-            <p class="error">{{ qaError() }}</p>
-          }
-
-          @if (qaResult(); as response) {
-            <div class="result-block">
-              <h4>Answer</h4>
-              <p class="answer-text" data-testid="qa-answer">{{ response.answer }}</p>
-
-              <h4>Sources</h4>
-              <ul class="citation-list" data-testid="qa-sources">
-                @for (citation of response.citations; track $index) {
-                  <li>
-                    {{ citationLabel(citation) }} | {{ citation.source_file }}
-                    @if (citation.page_range) { | page {{ citation.page_range }} }
-                    @if (citation.section_title) { | {{ citation.section_title }} }
-                  </li>
-                }
-              </ul>
-
-              <button type="button" class="ghost" (click)="toggleEvidence()" data-testid="qa-evidence-toggle">
-                {{ evidenceVisible() ? 'Hide Retrieved Evidence' : 'Show Retrieved Evidence' }}
-              </button>
-
-              @if (evidenceVisible()) {
-                @if (evidenceLoading()) {
-                  <p class="empty">Loading retrieved evidence…</p>
-                } @else if (evidence(); as retrieval) {
-                  <ul class="evidence-list" data-testid="qa-evidence">
-                    @for (item of retrieval.results; track $index) {
-                      <li>
-                        <p class="meta">
-                          {{ item.source_file }} | chunk {{ item.chunk_index }}
-                          @if (item.page_range) { | page {{ item.page_range }} }
-                          | vector {{ item.vector_score }} | lexical {{ item.lexical_score }} | final {{ item.hybrid_score }}
-                        </p>
-                        <p>{{ item.chunk_text }}</p>
-                      </li>
-                    }
-                  </ul>
-                }
-              }
-            </div>
-          }
-        </div>
+      <p class="meta">{{ document.document_type | uppercase }} · {{ document.chunk_count }} chunks</p>
+      @if (metadataLine(document)) {
+        <p class="meta">{{ metadataLine(document) }}</p>
       }
+    } @else {
+      <p class="empty">No document selected.</p>
+    }
 
-      @if (activeAction() === 'summary') {
-        <div class="action-panel" data-testid="summary-panel">
-          <button type="button" class="primary" (click)="generateSummary()" [disabled]="summaryLoading()" data-testid="summary-run-button">
-            {{ summaryLoading() ? 'Generating document summary…' : 'Generate Summary' }}
-          </button>
-
-          @if (summaryError()) {
-            <p class="error">{{ summaryError() }}</p>
-          }
-
-          @if (summaryResult(); as response) {
-            <div class="result-block">
-              <h4>Document Summary</h4>
-              <p class="answer-text" data-testid="summary-text">{{ response.summary }}</p>
-              <p class="meta">Source document: {{ response.source_file }} · {{ response.used_chunks }} chunks</p>
-            </div>
-          }
-        </div>
-      }
-
-      @if (activeAction() === 'keywords') {
-        <div class="action-panel" data-testid="keywords-panel">
-          <button type="button" class="primary" (click)="extractKeywords()" [disabled]="keywordsLoading()" data-testid="keywords-run-button">
-            {{ keywordsLoading() ? 'Extracting key concepts…' : 'Extract Keywords' }}
-          </button>
-
-          @if (keywordsError()) {
-            <p class="error">{{ keywordsError() }}</p>
-          }
-
-          @if (keywordsResult(); as response) {
-            <div class="result-block">
-              <h4>Key Legal Concepts</h4>
-              <ul class="keyword-chips" data-testid="keywords-list">
-                @for (keyword of response.keywords; track keyword) {
-                  <li class="keyword-chip">{{ keyword }}</li>
-                }
-              </ul>
-            </div>
-          }
-        </div>
-      }
+    <div class="action-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeAction() === 'qa'"
+        [disabled]="!selected()"
+        (click)="selectAction('qa')"
+        data-testid="action-qa"
+      >Ask Q&amp;A</button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeAction() === 'summary'"
+        [disabled]="!selected()"
+        (click)="selectAction('summary')"
+        data-testid="action-summary"
+      >Summarize</button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeAction() === 'keywords'"
+        [disabled]="!selected()"
+        (click)="selectAction('keywords')"
+        data-testid="action-keywords"
+      >Key Topics</button>
     </div>
-  }
+
+    @if (activeAction() === 'qa') {
+      <div class="action-panel" data-testid="qa-panel">
+        <label>
+          Question
+          <textarea
+            rows="2"
+            [ngModel]="qaQuestion()"
+            (ngModelChange)="qaQuestion.set($event)"
+            placeholder="Ask a question about this document"
+            data-testid="qa-input"
+          ></textarea>
+        </label>
+        <button type="button" class="primary" (click)="ask()" [disabled]="qaLoading() || !qaQuestion().trim()" data-testid="qa-run-button">
+          {{ qaLoading() ? 'Searching evidence and generating answer…' : 'Ask' }}
+        </button>
+
+        @if (qaError()) {
+          <p class="error">{{ qaError() }}</p>
+        }
+
+        @if (qaResult(); as response) {
+          <div class="result-block">
+            <h4>Answer</h4>
+            <p class="answer-text" data-testid="qa-answer">{{ response.answer }}</p>
+
+            <h4>Sources</h4>
+            <ul class="citation-list" data-testid="qa-sources">
+              @for (citation of response.citations; track $index) {
+                <li>
+                  {{ citationLabel(citation) }} | {{ citation.source_file }}
+                  @if (citation.page_range) { | page {{ citation.page_range }} }
+                  @if (citation.section_title) { | {{ citation.section_title }} }
+                </li>
+              }
+            </ul>
+
+            <button type="button" class="ghost" (click)="toggleEvidence()" data-testid="qa-evidence-toggle">
+              {{ evidenceVisible() ? 'Hide Retrieved Evidence' : 'Show Retrieved Evidence' }}
+            </button>
+
+            @if (evidenceVisible() && qaResult(); as response) {
+              @if (response.evidence && response.evidence.length) {
+                <ul class="evidence-list" data-testid="qa-evidence">
+                  @for (item of response.evidence; track $index) {
+                    <li>
+                      <p class="meta">
+                        {{ item.source_file }} | chunk {{ item.chunk_index }}
+                        @if (item.page_range) { | page {{ item.page_range }} }
+                        | vector {{ item.vector_score }} | lexical {{ item.lexical_score }} | final {{ item.hybrid_score }}
+                      </p>
+                      <p>{{ item.chunk_text }}</p>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="empty">No retrieved evidence available.</p>
+              }
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (activeAction() === 'summary') {
+      <div class="action-panel" data-testid="summary-panel">
+        <button type="button" class="primary" (click)="generateSummary()" [disabled]="summaryLoading()" data-testid="summary-run-button">
+          {{ summaryLoading() ? 'Generating document summary…' : 'Generate Summary' }}
+        </button>
+
+        @if (summaryError()) {
+          <p class="error">{{ summaryError() }}</p>
+        }
+
+        @if (summaryResult(); as response) {
+          <div class="result-block">
+            <h4>Document Summary</h4>
+            <p class="answer-text" data-testid="summary-text">{{ response.summary }}</p>
+            <p class="meta">Source: {{ response.source_file }} · {{ response.used_chunks }} chunks</p>
+          </div>
+        }
+      </div>
+    }
+
+    @if (activeAction() === 'keywords') {
+      <div class="action-panel" data-testid="keywords-panel">
+        <button type="button" class="primary" (click)="extractKeywords()" [disabled]="keywordsLoading()" data-testid="keywords-run-button">
+          {{ keywordsLoading() ? 'Extracting key topics…' : 'Extract Key Topics' }}
+        </button>
+
+        @if (keywordsError()) {
+          <p class="error">{{ keywordsError() }}</p>
+        }
+
+        @if (keywordsResult(); as response) {
+          <div class="result-block">
+            <h4>Key Topics</h4>
+            <ul class="keyword-chips" data-testid="keywords-list">
+              @for (topic of response.topics; track topic) {
+                <li class="keyword-chip">{{ topic }}</li>
+              }
+            </ul>
+            <p class="meta">Source: {{ response.source_file }}</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="indexed-section">
+    @if (listLoading()) {
+      <p class="empty">Loading indexed documents...</p>
+    } @else if (listError()) {
+      <p class="error">{{ listError() }}</p>
+    } @else if (documents().length === 0) {
+      <p class="empty">No indexed documents yet.</p>
+    } @else {
+      <button
+        type="button"
+        class="collapse-toggle"
+        [attr.aria-expanded]="listExpanded()"
+        aria-controls="indexed-documents-list"
+        (click)="toggleList()"
+        data-testid="documents-toggle"
+      >
+        <span>Indexed Documents ({{ documents().length }})</span>
+        <span class="chevron" aria-hidden="true">{{ listExpanded() ? '▾' : '▸' }}</span>
+      </button>
+
+      @if (listExpanded()) {
+        <ul class="doc-list" id="indexed-documents-list" data-testid="documents-list">
+          @for (document of documents(); track document.document_id) {
+            <li>
+              <button
+                type="button"
+                class="doc-row"
+                [class.active]="selected()?.document_id === document.document_id"
+                (click)="selectDocument(document)"
+                data-testid="document-row"
+              >
+                <span class="doc-title" data-testid="document-title">{{ document.source_file }}</span>
+                <span class="meta">{{ document.document_type | uppercase }} · {{ document.chunk_count }} chunks</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
 </section>

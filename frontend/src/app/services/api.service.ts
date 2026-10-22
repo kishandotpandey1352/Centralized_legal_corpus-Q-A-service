@@ -7,8 +7,7 @@ import {
   AnswerResponse,
   DocumentListResponse,
   DocumentMetadataInput,
-  EvaluationMetrics,
-  EvaluationScoreResponse,
+  EvaluationLatest,
   IngestionSummary,
   KeywordsRequest,
   KeywordsResponse,
@@ -42,8 +41,8 @@ export class ApiService {
     return this.http.post<KeywordsResponse>('/query/keywords', payload);
   }
 
-  scoreExperiment(payload: EvaluationMetrics): Observable<EvaluationScoreResponse> {
-    return this.http.post<EvaluationScoreResponse>('/eval/score', payload);
+  latestEvaluation(): Observable<EvaluationLatest> {
+    return this.http.get<EvaluationLatest>('/eval/latest');
   }
 
   uploadDocument(file: File, metadata: DocumentMetadataInput = {}): Observable<IngestionSummary> {

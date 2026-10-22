@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.retrieval.service import (
     answer_question,
-    extract_keywords,
+    extract_key_topics,
     retrieve_similar_chunks,
     summarize_document,
 )
@@ -129,7 +129,7 @@ def summary(request: SummaryRequest, db: Session = Depends(get_db)) -> dict[str,
 @router.post("/keywords")
 def keywords(request: KeywordsRequest, db: Session = Depends(get_db)) -> dict[str, object]:
     try:
-        return extract_keywords(db, document_id=request.document_id, limit=request.limit)
+        return extract_key_topics(db, document_id=request.document_id, limit=request.limit)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:

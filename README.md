@@ -608,17 +608,42 @@ exact legal terminology, citations, document identifiers, names, clause wording,
 and statutory references. Combining the signals is more appropriate for this
 controlled corpus than relying on either signal alone.
 
+Retrieval is deliberately split into two stages:
+
+1. **Candidate retrieval** — dense pgvector search returns up to
+   `RETRIEVAL_CANDIDATE_K` (default `10`) chunks.
+2. **Final evidence selection** — candidates are reranked with a combined
+   lexical + vector score, then only the strongest `RAG_CONTEXT_TOP_K`
+   (default `3`) chunks are passed to the LLM. An optional project-calibrated
+   `RAG_MIN_RELEVANCE_SCORE` (default unset/permissive) can reject weak chunks
+   before generation.
+
+```env
+RETRIEVAL_CANDIDATE_K=10
+RAG_CONTEXT_TOP_K=3
+# RAG_MIN_RELEVANCE_SCORE=0.0   # optional, calibrated for this project's scoring
+```
+
+The rerank score is `final = (1 - lexical_weight) * vector_score + lexical_weight * lexical_score`,
+where `lexical_weight` is `QA_RERANK_LEXICAL_WEIGHT` (default `0.35`) and
+`lexical_score` rewards query-term overlap plus exact multi-word phrase matches.
+`RAG_MIN_RELEVANCE_SCORE` is **not** a universal cosine-similarity threshold; it
+is calibrated for this project's combined scoring.
+
 ### Why citation validation?
 
 Legal answers should not display citations that cannot be tied back to retrieved
-source evidence. The service therefore builds structured citations from retrieved
-chunks and normalizes inline markers against those known IDs.
+source evidence. The service therefore builds structured citations from the final
+selected chunks (not the full candidate pool) and normalizes inline markers
+against those known IDs.
 
 ### Why abstention?
 
 Insufficient evidence should produce an explicit abstention instead of a
 fabricated answer. Retrieval score and lexical confidence gates provide a
-deterministic boundary before or alongside model generation.
+deterministic boundary before or alongside model generation. If no final
+evidence survives the relevance gate, the service abstains rather than calling
+the LLM with irrelevant context.
 
 ## Known Limitations
 

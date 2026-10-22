@@ -1,84 +1,101 @@
 <section class="panel">
   <h2>Evaluation</h2>
   <p class="meta">
-    Engineering quality gates for the RAG pipeline. Metric runs are produced by
-    <code>backend/scripts/eval_series.py</code> and scored through <code>POST /eval/score</code>.
+    Engineering quality gates for the RAG pipeline. The evaluation runner measures the
+    RAG system; the backend applies the project-specific scoring and gates.
   </p>
 
-  <h3 class="section-heading">Quality Gates</h3>
-  <table class="gate-table">
-    <thead>
-      <tr>
-        <th>Metric</th>
-        <th>Gate</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (gate of gates; track gate.key) {
-        <tr>
-          <td>{{ gate.label }}</td>
-          <td>{{ gate.threshold }}</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+  <h3 class="section-heading">Latest Evaluation</h3>
 
-  <h3 class="section-heading">Compute Overall Score</h3>
-  <div class="form-grid">
-    <label>
-      Faithfulness
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().faithfulness" (ngModelChange)="updateMetric('faithfulness', $event)" />
-    </label>
-    <label>
-      Answer correctness
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().answer_correctness" (ngModelChange)="updateMetric('answer_correctness', $event)" />
-    </label>
-    <label>
-      Recall@5
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().retrieval_recall_at_5" (ngModelChange)="updateMetric('retrieval_recall_at_5', $event)" />
-    </label>
-    <label>
-      Abstention accuracy
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().abstention_accuracy" (ngModelChange)="updateMetric('abstention_accuracy', $event)" />
-    </label>
-    <label>
-      Hallucination rate
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().hallucination_rate" (ngModelChange)="updateMetric('hallucination_rate', $event)" />
-    </label>
-    <label>
-      Invalid citation rate
-      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().invalid_citation_rate" (ngModelChange)="updateMetric('invalid_citation_rate', $event)" />
-    </label>
-    <label>
-      p95 latency (ms)
-      <input type="number" min="0" step="1" [ngModel]="metrics().latency_p95_ms" (ngModelChange)="updateMetric('latency_p95_ms', $event)" />
-    </label>
-  </div>
-
-  <button type="button" class="primary" (click)="run()" [disabled]="loading()" data-testid="eval-run-button">
-    {{ loading() ? 'Scoring…' : 'Compute Score' }}
-  </button>
-
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
-
-  @if (result(); as score) {
-    <div class="result-block" data-testid="eval-result">
-      <h3>Result</h3>
-      <p class="meta">
-        Overall score: {{ score.overall_score }} ·
-        <strong [class.ok]="score.pass_fail === 'pass'" [class.fail]="score.pass_fail === 'fail'">
-          {{ score.pass_fail | uppercase }}
-        </strong>
+  @if (latestLoading()) {
+    <p class="empty">Loading latest evaluation results...</p>
+  } @else if (latestError()) {
+    <p class="error">{{ latestError() }}</p>
+  } @else if (!latest()?.available) {
+    <p class="empty">No evaluation results are available yet.</p>
+    <p class="empty">
+      Run the evaluation from the CLI, for example:
+      <code>cd backend; python scripts/eval_series.py --cases ../mvp/golden_set_smoke.json</code>
+    </p>
+  } @else {
+    @let evaluation = latest()!;
+    <div class="latest-header" data-testid="eval-latest">
+      <p class="doc-title">
+        Status:
+        <span [class.ok]="evaluation.status === 'pass'" [class.fail]="evaluation.status === 'fail'" [class.empty]="!evaluation.status">
+          {{ evaluation.status ? evaluation.status.toUpperCase() : 'UNKNOWN' }}
+        </span>
       </p>
-      <ul class="gate-list">
-        @for (gate of gates; track gate.key) {
-          <li>
-            {{ gate.label }}: <strong>{{ score.gates[gate.key] ? 'PASS' : 'FAIL' }}</strong>
-          </li>
+      <p class="meta">
+        Run: {{ evaluation.run_id ?? '—' }} · Mode: {{ evaluation.mode ?? '—' }}
+        @if (evaluation.total_cases !== null && evaluation.total_cases !== undefined) {
+          · Cases: {{ evaluation.total_cases }}
         }
-      </ul>
+      </p>
     </div>
+
+    <table class="gate-table" data-testid="eval-gate-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Result</th>
+          <th>Gate</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (gate of gateDefinitions(); track gate.key) {
+          <tr>
+            <td>{{ gate.label }}</td>
+            <td [attr.data-testid]="'eval-metric-' + gate.key">{{ formatMetric(gate.key) }}</td>
+            <td>{{ gate.threshold }}</td>
+            <td [attr.data-testid]="'eval-gate-status-' + gate.key">
+              @switch (gateStatus(gate.key)) {
+                @case ('pass') { <span class="ok">PASS</span> }
+                @case ('fail') { <span class="fail">FAIL</span> }
+                @default { <span class="empty">INFO</span> }
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (evaluation.overall_score !== null && evaluation.overall_score !== undefined) {
+      <p class="composite-score" data-testid="eval-composite-score">
+        Composite Score: {{ evaluation.overall_score }}
+      </p>
+      <p class="meta">
+        Composite Score combines multiple retrieval, answer-quality, safety and performance
+        metrics for experiment comparison.
+      </p>
+    }
+
+    <p class="doc-title">Release Decision:
+      <span [class.ok]="evaluation.status === 'pass'" [class.fail]="evaluation.status === 'fail'" [class.empty]="!evaluation.status">
+        {{ evaluation.status ? evaluation.status.toUpperCase() : 'UNKNOWN' }}
+      </span>
+    </p>
+
+    @if (failedGates().length) {
+      <p class="fail" data-testid="eval-failed-gates">
+        Release gate failed: {{ failedGates().join(', ') }}.
+      </p>
+    }
+    <p class="meta">
+      Release Decision is determined by the configured quality gates. A high composite
+      score does not override a failed critical gate.
+    </p>
   }
+
+  <h3 class="section-heading">How evaluation works</h3>
+  <ol class="how-list">
+    <li>Golden evaluation cases are run through the real RAG pipeline.</li>
+    <li>Retrieval, answer, citation and latency metrics are measured.</li>
+    <li>Backend scoring applies project-specific regression gates.</li>
+    <li>CI can reject changes when mandatory gates fail.</li>
+  </ol>
+  <p class="meta">
+    These are project-specific regression gates, not universal legal-AI quality standards.
+  </p>
 </section>
