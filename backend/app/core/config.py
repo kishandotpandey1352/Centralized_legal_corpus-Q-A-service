@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     qa_direct_answer_min_overlap: float = 0.55
     qa_rerank_lexical_weight: float = 0.35
     summary_default_chunks: int = 6
+    max_upload_size_mb: int = 25
 
     model_config = SettingsConfigDict(
         env_file=".env",

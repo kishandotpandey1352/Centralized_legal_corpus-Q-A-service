@@ -1,0 +1,84 @@
+<section class="panel">
+  <h2>Evaluation</h2>
+  <p class="meta">
+    Engineering quality gates for the RAG pipeline. Metric runs are produced by
+    <code>backend/scripts/eval_series.py</code> and scored through <code>POST /eval/score</code>.
+  </p>
+
+  <h3 class="section-heading">Quality Gates</h3>
+  <table class="gate-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>Gate</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (gate of gates; track gate.key) {
+        <tr>
+          <td>{{ gate.label }}</td>
+          <td>{{ gate.threshold }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <h3 class="section-heading">Compute Overall Score</h3>
+  <div class="form-grid">
+    <label>
+      Faithfulness
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().faithfulness" (ngModelChange)="updateMetric('faithfulness', $event)" />
+    </label>
+    <label>
+      Answer correctness
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().answer_correctness" (ngModelChange)="updateMetric('answer_correctness', $event)" />
+    </label>
+    <label>
+      Recall@5
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().retrieval_recall_at_5" (ngModelChange)="updateMetric('retrieval_recall_at_5', $event)" />
+    </label>
+    <label>
+      Abstention accuracy
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().abstention_accuracy" (ngModelChange)="updateMetric('abstention_accuracy', $event)" />
+    </label>
+    <label>
+      Hallucination rate
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().hallucination_rate" (ngModelChange)="updateMetric('hallucination_rate', $event)" />
+    </label>
+    <label>
+      Invalid citation rate
+      <input type="number" min="0" max="1" step="0.01" [ngModel]="metrics().invalid_citation_rate" (ngModelChange)="updateMetric('invalid_citation_rate', $event)" />
+    </label>
+    <label>
+      p95 latency (ms)
+      <input type="number" min="0" step="1" [ngModel]="metrics().latency_p95_ms" (ngModelChange)="updateMetric('latency_p95_ms', $event)" />
+    </label>
+  </div>
+
+  <button type="button" class="primary" (click)="run()" [disabled]="loading()" data-testid="eval-run-button">
+    {{ loading() ? 'Scoring…' : 'Compute Score' }}
+  </button>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (result(); as score) {
+    <div class="result-block" data-testid="eval-result">
+      <h3>Result</h3>
+      <p class="meta">
+        Overall score: {{ score.overall_score }} ·
+        <strong [class.ok]="score.pass_fail === 'pass'" [class.fail]="score.pass_fail === 'fail'">
+          {{ score.pass_fail | uppercase }}
+        </strong>
+      </p>
+      <ul class="gate-list">
+        @for (gate of gates; track gate.key) {
+          <li>
+            {{ gate.label }}: <strong>{{ score.gates[gate.key] ? 'PASS' : 'FAIL' }}</strong>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</section>

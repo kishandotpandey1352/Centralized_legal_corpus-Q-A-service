@@ -377,6 +377,100 @@ populate these fields:
 The metadata keys must correspond to files in `data/sample_docs/`; omitted fields
 remain `NULL`.
 
+### Uploading and Indexing a Document
+
+Documents can also be ingested one at a time through `POST /ingest/upload`
+(multipart/form-data). The endpoint reuses the same parsing, chunking, embedding,
+and persistence pipeline as `POST /ingest/sample-docs`; there is no second
+ingestion implementation.
+
+Internal pipeline:
+
+```
+upload → temporary storage → parse → normalize → chunk
+       → BGE-M3 embeddings → PostgreSQL/pgvector → immediately available for RAG retrieval
+```
+
+Indexing is synchronous: the endpoint returns only after the document and all of
+its chunks and embeddings have been committed. Re-uploading the same source file
+transactionally replaces its previous rows (no duplicate accumulation), and a
+failed embedding aborts the whole transaction so no partial document is left
+behind.
+
+#### From the browser
+
+1. Start PostgreSQL/pgvector (`docker compose up -d` from `infra/`).
+2. Start the backend (`python -m uvicorn app.main:app --reload --port 8000` from `backend/`).
+3. Start the frontend (`npm start` from `frontend/`).
+4. Open the Angular UI at `http://localhost:4200`.
+5. Choose the **Upload** tab.
+6. Select a PDF, DOCX, or TXT file (or drag and drop it).
+7. Optionally fill in legal metadata (jurisdiction, court, canonical citation, decision date, practice area).
+8. Click **Upload / Index**.
+9. Wait for the "Document indexed successfully" confirmation.
+10. Click **Ask Questions About This Document** (or use Query / Answer) to search the document.
+
+#### From the command line
+
+From PowerShell on Windows:
+
+```bat
+curl.exe -X POST http://localhost:8000/ingest/upload ^
+  -F "file=@C:\path\to\judgment.pdf" ^
+  -F "jurisdiction=UK" ^
+  -F "court=Supreme Court" ^
+  -F "canonical_citation=[2025] UKSC 12" ^
+  -F "decision_date=2025-04-03" ^
+  -F "practice_area=Public Law"
+```
+
+All fields except `file` are optional. The response includes `status`,
+`document_id`, `source_file`, `document_type`, `chunks_indexed`,
+`embedding_backend`, `embedding_model`, `metadata`, and `processing_time_ms`.
+
+Rules:
+
+- `file` is required; only `.pdf`, `.docx`, and `.txt` are accepted.
+- All legal metadata fields are optional; no LLM is used to infer them.
+- Unsupported formats return `415`; oversized files return `413`; empty or
+  unparseable content returns `400`; unexpected failures return `500` without
+  internal details.
+- Uploads are staged in a generated temporary file, streamed to disk in bounded
+  chunks, and deleted after ingestion. The original filename is sanitized and
+  kept only as metadata.
+
+The maximum upload size is configured through the environment variable
+`MAX_UPLOAD_SIZE_MB` (default `25`):
+
+```env
+MAX_UPLOAD_SIZE_MB=25
+```
+
+#### Verify what was indexed (SQL)
+
+Check documents and their chunk counts:
+
+```sql
+SELECT d.source_file, d.document_type, COUNT(c.id) AS chunks
+FROM documents d
+JOIN chunks c ON c.document_id = d.id
+GROUP BY d.source_file, d.document_type
+ORDER BY d.source_file;
+```
+
+Check that embeddings are populated without printing the vectors themselves:
+
+```sql
+SELECT d.source_file,
+       COUNT(c.id)                                              AS chunks,
+       COUNT(c.embedding)                                       AS embeddings_non_null,
+       COUNT(*) FILTER (WHERE vector_dims(c.embedding) = 1024)  AS embeddings_with_dims
+FROM documents d
+JOIN chunks c ON c.document_id = d.id
+GROUP BY d.source_file
+ORDER BY d.source_file;
+```
+
 Optional legal metadata filters can be used on both `/query/retrieve` and
 `/query/answer`. For an answer request:
 
@@ -403,6 +497,34 @@ npm start
 Open `http://localhost:4200`. The development proxy forwards the API calls to
 `http://localhost:8000`. See [frontend/README.md](frontend/README.md) for the
 frontend-specific details.
+
+## User Workflow
+
+The frontend is document-centric. Retrieval, generation, summarization, and
+keyword extraction remain separate backend capabilities, but normal users only
+see one workspace:
+
+1. Upload and index a legal document.
+2. Select an indexed document.
+3. Ask questions, summarize it, or extract keywords.
+4. Inspect citations/retrieved evidence when needed.
+5. Review RAG quality in Evaluation.
+
+```
+Document
+↓
+Upload & Index
+↓
+PostgreSQL + pgvector
+↓
+Indexed Document
+├── Q&A        (POST /query/answer + POST /query/retrieve)
+├── Summary    (POST /query/summary)
+└── Keywords   (POST /query/keywords)
+```
+
+Evaluation remains a separate tab because it represents engineering/admin
+quality gates rather than an end-user document action.
 
 ### Run tests and builds
 

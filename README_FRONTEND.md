@@ -15,27 +15,26 @@ Frontend location:
 
 ## MVP Features Implemented
 
-1. Query retrieval panel
-- Sends `POST /query/retrieve`
-- Displays retrieved chunks with source, chunk index, and score
-- Supports filters: `source_file`, `document_type`
-- Supports rerank controls: `rerank`, `candidate_pool_size`
+The frontend is document-centric with three top-level tabs: **Documents**,
+**Evaluation**, and **History**.
 
-2. Answer with citations panel
-- Sends `POST /query/answer`
-- Displays answer text and side-by-side citation inspector
-- Supports same retrieval filters/rerank controls
+1. Documents workspace
+- Upload new documents (`POST /ingest/upload`) with optional legal metadata
+- Lists previously indexed documents (`GET /documents`)
+- Select an indexed document and run actions inline:
+  - Ask Q&A (`POST /query/answer` + optional `POST /query/retrieve` evidence)
+  - Summarize (`POST /query/summary`)
+  - Extract keywords (`POST /query/keywords`)
 
-3. Summary view panel
-- Sends `POST /query/summary`
-- Displays summary text, mode, used chunks, and side-by-side citation inspector
+2. Evaluation
+- Shows the RAG quality gates and computes an overall score via `POST /eval/score`
 
-4. Run-history panel
+3. Run-history panel
 - Stores local run entries in browser localStorage
 - Records request, response, timestamp, and success/error status
 - Supports clear, JSON export, and JSON import with validation
 
-5. E2E testing for core workflows
+6. E2E testing for core workflows
 - Playwright test suite for query, answer, summary, and history flows
 - Uses mocked API responses for deterministic frontend validation
 
@@ -49,7 +48,7 @@ Frontend location:
 - frontend/src/app/app.ts: routed shell component
 - frontend/src/app/app.html: shell nav + router outlet
 - frontend/src/app/app.scss: shell-level visual styles
-- frontend/src/app/app.routes.ts: route definitions (`/query`, `/answer`, `/summary`, `/history`)
+- frontend/src/app/app.routes.ts: route definitions (`/documents`, `/evaluation`, `/history`; legacy `/query`, `/answer`, `/summary`, `/upload` redirect to `/documents`)
 - frontend/src/app/models.ts: request/response TypeScript interfaces
 - frontend/src/app/services/api.service.ts: backend HTTP service layer
 - frontend/src/app/services/history.service.ts: history persistence + export/import
@@ -156,6 +155,22 @@ Response fields consumed:
 - `used_chunks`
 - `mode`
 
+### Upload
+Request shape (multipart form data):
+- `file`: the document binary (`.txt`, `.docx`, or `.pdf`)
+- optional `jurisdiction`, `court`, `canonical_citation`, `decision_date` (ISO date), `practice_area`
+
+Response fields consumed:
+- `status`
+- `document_id`
+- `source_file`
+- `document_type`
+- `chunks_indexed`
+- `embedding_backend`
+- `embedding_model`
+- `metadata` (`jurisdiction`, `court`, `canonical_citation`, `decision_date`, `practice_area`)
+- `processing_time_ms` (optional)
+
 ## Frontend State and Behavior
 
 State management approach:
@@ -244,7 +259,7 @@ How it is implemented:
 
 ## UX and Design Notes
 
-- Single-page tabbed workbench (`query`, `answer`, `summary`, `history`)
+- Single-page tabbed workbench (`documents`, `evaluation`, `history`)
 - Responsive layout for desktop and mobile
 - Purposeful typography and non-default visual theme
 - Lightweight reveal animation for panel transitions

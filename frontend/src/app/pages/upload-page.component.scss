@@ -1,0 +1,77 @@
+.subtitle {
+  margin: 0 0 1rem;
+  color: #35535f;
+  max-width: 70ch;
+}
+
+.section-heading {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 1rem;
+  color: #1f3d47;
+}
+
+.dropzone {
+  border: 2px dashed rgba(30, 111, 116, 0.35);
+  border-radius: 0.85rem;
+  background: rgba(245, 243, 236, 0.6);
+  padding: 1.4rem 1rem;
+  text-align: center;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.dropzone.drag-active {
+  border-color: #1e6f74;
+  background: rgba(30, 111, 116, 0.08);
+}
+
+.dropzone label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.dropzone input[type='file'] {
+  width: 100%;
+  max-width: 24rem;
+  font: inherit;
+  color: #35535f;
+}
+
+.dropzone input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(130deg, #1e6f74 0%, #184a59 100%);
+}
+
+.dropzone-text {
+  font-weight: 700;
+  color: #1f3d47;
+}
+
+.dropzone-hint {
+  font-size: 0.82rem;
+  color: #45616c;
+}
+
+.ok {
+  color: #1e6f74;
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
+input[type='date'] {
+  width: 100%;
+  font: inherit;
+  border: 1px solid rgba(22, 58, 65, 0.18);
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  background: #fdfdfb;
+  color: #1f3d47;
+}

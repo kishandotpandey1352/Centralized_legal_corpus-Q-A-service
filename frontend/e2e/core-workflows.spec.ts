@@ -1,56 +1,56 @@
 import { expect, test } from '@playwright/test';
 
-test('query route executes and displays results', async ({ page }) => {
-  await page.route('**/query/retrieve', async (route) => {
+const documents = [
+  {
+    document_id: 'doc-1',
+    source_file: 'Hawthorne Analytics v Mercer.pdf',
+    document_type: 'pdf',
+    title: 'Hawthorne Analytics v Mercer',
+    chunk_count: 23,
+    jurisdiction: 'UK',
+    court: 'Employment Tribunal',
+    canonical_citation: null,
+    decision_date: null,
+    practice_area: null,
+  },
+];
+
+test('documents workspace shows upload section and indexed documents', async ({ page }) => {
+  await page.route('**/documents', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        query: 'material breach',
-        top_k: 2,
-        results: [
-          {
-            chunk_id: 'chunk-1',
-            source_file: 'sample_service_agreement.txt',
-            chunk_index: 0,
-            chunk_text: 'A 30-day cure period applies before termination. ',
-            score: 0.88,
-          },
-        ],
-      }),
+      body: JSON.stringify({ documents }),
     });
   });
 
-  await page.goto('/query');
-  await page.getByTestId('query-input').fill('What is cure period?');
-  await page.getByTestId('query-run-button').click();
+  await page.goto('/documents');
 
-  await expect(page.getByTestId('query-result-block')).toBeVisible();
-  await expect(page.getByText('sample_service_agreement.txt')).toBeVisible();
-  await expect(page.getByText('30-day cure period')).toBeVisible();
+  await expect(page.getByTestId('upload-file-input')).toBeVisible();
+  await expect(page.getByTestId('document-title')).toContainText('Hawthorne Analytics v Mercer.pdf');
 });
 
-test('answer and summary routes render side-by-side citation inspector', async ({ page }) => {
+test('documents workspace runs Q&A, summary and keywords for the selected document', async ({ page }) => {
+  await page.route('**/documents', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ documents }) });
+  });
+
   await page.route('**/query/answer', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        answer: 'The agreement requires a cure period before termination. [C1] [C2]',
+        answer: 'The dismissal was procedurally unfair. [C1]',
         citations: [
           {
-            citation_id: 'C1',
-            source_file: 'sample_service_agreement.txt',
+            id: 'C1',
+            source_file: 'Hawthorne Analytics v Mercer.pdf',
             chunk_index: 0,
-            chunk_text: 'Material breach requires written notice. ',
-          },
-          {
-            citation_id: 'C2',
-            source_file: 'sample_service_agreement.txt',
-            chunk_index: 1,
-            chunk_text: 'Termination occurs if not cured within 30 days. ',
+            page_range: '4',
+            section_title: 'Procedural Fairness',
           },
         ],
+        mode: 'evidence-direct',
       }),
     });
   });
@@ -60,72 +60,55 @@ test('answer and summary routes render side-by-side citation inspector', async (
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        source_file: 'sample_service_agreement.txt',
-        summary: '1. Notice required for breach. [C1] 2. Cure period is 30 days. [C2]',
+        source_file: 'Hawthorne Analytics v Mercer.pdf',
+        summary: '1. Unfair dismissal findings. [C1]',
+        citations: [{ id: 'C1', source_file: 'Hawthorne Analytics v Mercer.pdf', chunk_index: 0 }],
+        used_chunks: 1,
         mode: 'llm-summary',
-        used_chunks: 2,
-        citations: [
-          {
-            citation_id: 'C1',
-            source_file: 'sample_service_agreement.txt',
-            chunk_index: 0,
-            chunk_text: 'Notice obligation details.',
-          },
-          {
-            citation_id: 'C2',
-            source_file: 'sample_service_agreement.txt',
-            chunk_index: 1,
-            chunk_text: 'Thirty day cure period details.',
-          },
-        ],
       }),
     });
   });
 
-  await page.goto('/answer');
-  await page.getByTestId('answer-input').fill('What happens before termination?');
-  await page.getByTestId('answer-run-button').click();
-  await expect(page.getByTestId('answer-text')).toContainText('cure period before termination');
-  await expect(page.getByTestId('citation-inspector')).toBeVisible();
-  await page.getByTestId('citation-pill-1').click();
-  await expect(page.getByTestId('citation-detail')).toContainText('30 days');
-
-  await page.goto('/summary');
-  await page.getByTestId('summary-source-input').fill('sample_service_agreement.txt');
-  await page.getByTestId('summary-run-button').click();
-  await expect(page.getByTestId('summary-text')).toContainText('Cure period is 30 days');
-  await expect(page.getByTestId('citation-inspector')).toBeVisible();
-});
-
-test('history route supports export and import json', async ({ page }) => {
-  await page.route('**/query/retrieve', async (route) => {
+  await page.route('**/query/keywords', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ query: 'x', top_k: 1, results: [] }),
+      body: JSON.stringify({
+        document_id: 'doc-1',
+        source_file: 'Hawthorne Analytics v Mercer.pdf',
+        keywords: ['unfair dismissal', 'procedural fairness'],
+      }),
     });
   });
 
-  await page.goto('/query');
-  await page.getByTestId('query-input').fill('seed history');
-  await page.getByTestId('query-run-button').click();
+  await page.goto('/documents');
 
+  await page.getByTestId('doc-qa-button').first().click();
+  await page.getByTestId('qa-input').fill('Why was the dismissal unfair?');
+  await page.getByTestId('qa-run-button').click();
+  await expect(page.getByTestId('qa-answer')).toContainText('procedurally unfair');
+  await expect(page.getByTestId('qa-sources')).toContainText('C1');
+
+  await page.getByTestId('action-summary').click();
+  await page.getByTestId('summary-run-button').click();
+  await expect(page.getByTestId('summary-text')).toContainText('Unfair dismissal');
+
+  await page.getByTestId('action-keywords').click();
+  await page.getByTestId('keywords-run-button').click();
+  await expect(page.getByTestId('keywords-list')).toContainText('unfair dismissal');
+});
+
+test('history route supports import and export json', async ({ page }) => {
   await page.goto('/history');
-  await expect(page.getByTestId('history-list')).toContainText('Query');
-
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByTestId('history-export-button').click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toContain('rag-legal-history-');
 
   const importPayload = JSON.stringify([
     {
       id: 'imported-1',
-      type: 'summary',
+      type: 'answer',
       timestamp: new Date().toISOString(),
       status: 'success',
-      request: { source_file: 'sample_service_agreement.txt', max_chunks: 6 },
-      response: { summary: 'Imported summary', citations: [] },
+      request: { question: 'x', document_id: 'doc-1', top_k: 5 },
+      response: { answer: 'Imported answer [C1]', citations: [] },
     },
   ]);
 
@@ -136,5 +119,10 @@ test('history route supports export and import json', async ({ page }) => {
   });
 
   await expect(page.getByText('Imported 1 history entries.')).toBeVisible();
-  await expect(page.getByTestId('history-list')).toContainText('Summary');
+  await expect(page.getByTestId('history-list')).toContainText('Answer');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('history-export-button').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain('rag-legal-history-');
 });

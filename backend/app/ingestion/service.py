@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import logging
 import re
+import time
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -18,6 +21,8 @@ from app.retrieval.embeddings import embed_texts, vector_to_pg_literal
 
 SUPPORTED_EXTENSIONS = {".txt", ".docx", ".pdf"}
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class DocumentMetadata:
@@ -26,6 +31,15 @@ class DocumentMetadata:
     canonical_citation: str | None = None
     decision_date: date | None = None
     practice_area: str | None = None
+    title: str | None = None
+
+
+class EmptyDocumentError(ValueError):
+    """Raised when a supported document yields no extractable text."""
+
+
+class DocumentParseError(ValueError):
+    """Raised when a supported document cannot be parsed into text."""
 
 
 @dataclass(frozen=True)
@@ -130,7 +144,160 @@ def _normalize_document_metadata(metadata: DocumentMetadata | None) -> DocumentM
         canonical_citation=_clean_metadata_value(metadata.canonical_citation),
         decision_date=metadata.decision_date,
         practice_area=_clean_metadata_value(metadata.practice_area),
+        title=_clean_metadata_value(metadata.title),
     )
+
+
+def ingest_document(
+    db: Session,
+    *,
+    file_path: Path,
+    source_filename: str,
+    document_type: str,
+    metadata: DocumentMetadata | None = None,
+) -> dict[str, object]:
+    """Ingest a single supported document into the vector store.
+
+    Shared by sample-corpus ingestion and uploaded-file ingestion. Deletes any
+    prior rows for ``source_filename``, then inserts a fresh document record,
+    chunk rows, and pgvector embeddings. The caller owns the transaction and is
+    responsible for committing or rolling back.
+    """
+    if not file_path.is_file():
+        raise FileNotFoundError(f"Document file not found: {file_path}")
+
+    started = time.perf_counter()
+
+    try:
+        segments = _load_segments_from_path(file_path)
+    except Exception as exc:
+        logger.warning(
+            json.dumps(
+                {
+                    "event": "ingestion_failed",
+                    "status": "failed",
+                    "source_file": source_filename,
+                    "document_type": document_type,
+                    "error_category": "parse_error",
+                    "elapsed_ms": int((time.perf_counter() - started) * 1000),
+                }
+            )
+        )
+        raise DocumentParseError(f"Could not parse '{source_filename}': {exc}") from exc
+
+    full_text = "\n\n".join(segment.text for segment in segments).strip()
+    if not full_text:
+        logger.warning(
+            json.dumps(
+                {
+                    "event": "ingestion_failed",
+                    "status": "failed",
+                    "source_file": source_filename,
+                    "document_type": document_type,
+                    "error_category": "empty_document",
+                    "elapsed_ms": int((time.perf_counter() - started) * 1000),
+                }
+            )
+        )
+        raise EmptyDocumentError(f"No extractable text found in '{source_filename}'")
+
+    db.execute(
+        text("DELETE FROM documents WHERE source_file = :source_file"),
+        {"source_file": source_filename},
+    )
+
+    document_id = str(uuid4())
+    cleaned_metadata = _normalize_document_metadata(metadata)
+    title = cleaned_metadata.title or _extract_title(full_text, Path(source_filename).stem)
+    db.execute(
+        text(
+            """
+            INSERT INTO documents (
+                id, source_file, document_type, title, jurisdiction, court,
+                canonical_citation, decision_date, practice_area
+            )
+            VALUES (
+                :id, :source_file, :document_type, :title, :jurisdiction, :court,
+                :canonical_citation, :decision_date, :practice_area
+            )
+            """
+        ),
+        {
+            "id": document_id,
+            "source_file": source_filename,
+            "document_type": document_type,
+            "title": title,
+            "jurisdiction": cleaned_metadata.jurisdiction,
+            "court": cleaned_metadata.court,
+            "canonical_citation": cleaned_metadata.canonical_citation,
+            "decision_date": cleaned_metadata.decision_date,
+            "practice_area": cleaned_metadata.practice_area,
+        },
+    )
+
+    chunk_index = 0
+    pending_embeddings: list[tuple[str, str]] = []
+    for segment in segments:
+        for chunk_text in _chunk_text(segment.text):
+            chunk_id = str(uuid4())
+            db.execute(
+                text(
+                    """
+                    INSERT INTO chunks (id, document_id, chunk_index, chunk_text, page_range, section_title)
+                    VALUES (:id, :document_id, :chunk_index, :chunk_text, :page_range, :section_title)
+                    """
+                ),
+                {
+                    "id": chunk_id,
+                    "document_id": document_id,
+                    "chunk_index": chunk_index,
+                    "chunk_text": chunk_text,
+                    "page_range": segment.page_range,
+                    "section_title": _extract_section_title(chunk_text),
+                },
+            )
+            pending_embeddings.append((chunk_id, chunk_text))
+            chunk_index += 1
+
+    if pending_embeddings:
+        embedding_vectors = embed_texts(
+            [chunk_text for _, chunk_text in pending_embeddings],
+            model_name=settings.embedding_model,
+            backend=settings.embedding_backend,
+            cache_dir=settings.embedding_cache_dir,
+        )
+        for (chunk_id, _), vector in zip(pending_embeddings, embedding_vectors):
+            db.execute(
+                text("UPDATE chunks SET embedding = CAST(:embedding AS vector) WHERE id = :chunk_id"),
+                {"embedding": vector_to_pg_literal(vector), "chunk_id": chunk_id},
+            )
+
+    logger.info(
+        json.dumps(
+            {
+                "event": "document_indexed",
+                "status": "indexed",
+                "document_id": document_id,
+                "source_file": source_filename,
+                "document_type": document_type,
+                "chunk_count": chunk_index,
+                "embedding_backend": settings.embedding_backend,
+                "embedding_model": settings.embedding_model,
+                "elapsed_ms": int((time.perf_counter() - started) * 1000),
+            }
+        )
+    )
+
+    return {
+        "document_id": document_id,
+        "source_file": source_filename,
+        "document_type": document_type,
+        "title": title,
+        "chunks_ingested": chunk_index,
+        "metadata": cleaned_metadata,
+        "embedding_backend": settings.embedding_backend,
+        "embedding_model": settings.embedding_model,
+    }
 
 
 def ingest_sample_docs(
@@ -153,90 +320,44 @@ def ingest_sample_docs(
 
     try:
         for file_path in candidate_files:
-            segments = _load_segments_from_path(file_path)
-            full_text = "\n\n".join(segment.text for segment in segments).strip()
-            if not full_text:
+            try:
+                result = ingest_document(
+                    db,
+                    file_path=file_path,
+                    source_filename=file_path.name,
+                    document_type=file_path.suffix.lower().lstrip("."),
+                    metadata=metadata_by_source.get(file_path.name) if metadata_by_source else None,
+                )
+            except EmptyDocumentError:
                 continue
 
-            db.execute(
-                text("DELETE FROM documents WHERE source_file = :source_file"),
-                {"source_file": file_path.name},
-            )
-
-            document_id = str(uuid4())
-            metadata = _normalize_document_metadata(
-                metadata_by_source.get(file_path.name) if metadata_by_source else None
-            )
-            db.execute(
-                text(
-                    """
-                    INSERT INTO documents (
-                        id, source_file, document_type, title, jurisdiction, court,
-                        canonical_citation, decision_date, practice_area
-                    )
-                    VALUES (
-                        :id, :source_file, :document_type, :title, :jurisdiction, :court,
-                        :canonical_citation, :decision_date, :practice_area
-                    )
-                    """
-                ),
-                {
-                    "id": document_id,
-                    "source_file": file_path.name,
-                    "document_type": file_path.suffix.lower().lstrip("."),
-                    "title": _extract_title(full_text, file_path.stem),
-                    "jurisdiction": metadata.jurisdiction,
-                    "court": metadata.court,
-                    "canonical_citation": metadata.canonical_citation,
-                    "decision_date": metadata.decision_date,
-                    "practice_area": metadata.practice_area,
-                },
-            )
-
-            chunk_index = 0
-            pending_embeddings: list[tuple[str, str]] = []
-            for segment in segments:
-                for chunk_text in _chunk_text(segment.text):
-                    chunk_id = str(uuid4())
-                    db.execute(
-                        text(
-                            """
-                            INSERT INTO chunks (id, document_id, chunk_index, chunk_text, page_range, section_title)
-                            VALUES (:id, :document_id, :chunk_index, :chunk_text, :page_range, :section_title)
-                            """
-                        ),
-                        {
-                            "id": chunk_id,
-                            "document_id": document_id,
-                            "chunk_index": chunk_index,
-                            "chunk_text": chunk_text,
-                            "page_range": segment.page_range,
-                            "section_title": _extract_section_title(chunk_text),
-                        },
-                    )
-                    pending_embeddings.append((chunk_id, chunk_text))
-                    chunk_index += 1
-
-            if pending_embeddings:
-                embedding_vectors = embed_texts(
-                    [chunk_text for _, chunk_text in pending_embeddings],
-                    model_name=settings.embedding_model,
-                    backend=settings.embedding_backend,
-                    cache_dir=settings.embedding_cache_dir,
-                )
-                for (chunk_id, _), vector in zip(pending_embeddings, embedding_vectors):
-                    db.execute(
-                        text("UPDATE chunks SET embedding = CAST(:embedding AS vector) WHERE id = :chunk_id"),
-                        {"embedding": vector_to_pg_literal(vector), "chunk_id": chunk_id},
-                    )
-
-            document_count += 1
-            chunk_count += chunk_index
             ingested_files.append(file_path.name)
+            document_count += 1
+            chunk_count += int(result["chunks_ingested"])
 
         db.commit()
-    except Exception:
+        logger.info(
+            json.dumps(
+                {
+                    "event": "sample_ingestion_complete",
+                    "status": "indexed",
+                    "document_count": document_count,
+                    "chunk_count": chunk_count,
+                }
+            )
+        )
+    except Exception as exc:
         db.rollback()
+        logger.error(
+            json.dumps(
+                {
+                    "event": "sample_ingestion_failed",
+                    "status": "failed",
+                    "error_category": "internal",
+                    "error_type": type(exc).__name__,
+                }
+            )
+        )
         raise
 
     return {
@@ -245,3 +366,38 @@ def ingest_sample_docs(
         "chunks_ingested": chunk_count,
         "files": ingested_files,
     }
+
+
+def list_documents(db: Session) -> list[dict[str, object]]:
+    """Return indexed-document summaries (metadata + chunk counts), newest first."""
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                d.id, d.source_file, d.document_type, d.title,
+                d.jurisdiction, d.court, d.canonical_citation,
+                d.decision_date, d.practice_area, d.created_at,
+                COUNT(c.id) AS chunk_count
+            FROM documents d
+            LEFT JOIN chunks c ON c.document_id = d.id
+            GROUP BY d.id
+            ORDER BY d.created_at DESC, d.source_file ASC
+            """
+        )
+    ).mappings().all()
+
+    return [
+        {
+            "document_id": str(row["id"]),
+            "source_file": row["source_file"],
+            "document_type": row["document_type"],
+            "title": row["title"],
+            "chunk_count": int(row["chunk_count"]),
+            "jurisdiction": row["jurisdiction"],
+            "court": row["court"],
+            "canonical_citation": row["canonical_citation"],
+            "decision_date": row["decision_date"].isoformat() if row["decision_date"] else None,
+            "practice_area": row["practice_area"],
+        }
+        for row in rows
+    ]

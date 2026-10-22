@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import json
+from collections import Counter
 from datetime import date
 from typing import Any
 
@@ -79,6 +81,7 @@ def retrieve_similar_chunks(
     query: str,
     top_k: int = 5,
     source_file: str | None = None,
+    document_id: str | None = None,
     document_type: str | None = None,
     jurisdiction: str | None = None,
     court: str | None = None,
@@ -107,6 +110,7 @@ def retrieve_similar_chunks(
     db.execute(text("SET LOCAL ivfflat.probes = 10"))
 
     cleaned_source_file = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
+    cleaned_document_id = document_id.strip() if isinstance(document_id, str) and document_id.strip() else None
     cleaned_document_type = document_type.strip().lower() if isinstance(document_type, str) and document_type.strip() else None
     cleaned_jurisdiction = jurisdiction.strip() if isinstance(jurisdiction, str) and jurisdiction.strip() else None
     cleaned_court = court.strip() if isinstance(court, str) and court.strip() else None
@@ -123,6 +127,9 @@ def retrieve_similar_chunks(
     if cleaned_source_file:
         where_clauses.append("d.source_file = :source_file")
         sql_params["source_file"] = cleaned_source_file
+    if cleaned_document_id:
+        where_clauses.append("c.document_id = :document_id")
+        sql_params["document_id"] = cleaned_document_id
     if cleaned_document_type:
         where_clauses.append("d.document_type = :document_type")
         sql_params["document_type"] = cleaned_document_type
@@ -197,6 +204,7 @@ def retrieve_similar_chunks(
         "query": cleaned_query,
         "top_k": top_k,
         "source_file": cleaned_source_file,
+        "document_id": cleaned_document_id,
         "document_type": cleaned_document_type,
         "jurisdiction": cleaned_jurisdiction,
         "court": cleaned_court,
@@ -629,6 +637,7 @@ def answer_question(
     question: str,
     top_k: int = 5,
     source_file: str | None = None,
+    document_id: str | None = None,
     document_type: str | None = None,
     jurisdiction: str | None = None,
     court: str | None = None,
@@ -644,6 +653,7 @@ def answer_question(
 
     retrieval_kwargs: dict[str, Any] = {
         "source_file": source_file,
+        "document_id": document_id,
         "document_type": document_type,
         "jurisdiction": jurisdiction,
         "court": court,
@@ -783,17 +793,30 @@ def _fallback_summary(contexts: list[dict[str, Any]]) -> str:
     return _structured_summary_from_contexts(contexts, max_points=4)
 
 
-def summarize_document(db: Session, source_file: str, max_chunks: int | None = None) -> dict[str, Any]:
-    cleaned_source = source_file.strip()
-    if not cleaned_source:
-        raise ValueError("source_file cannot be empty")
+def summarize_document(
+    db: Session,
+    source_file: str | None = None,
+    document_id: str | None = None,
+    max_chunks: int | None = None,
+) -> dict[str, Any]:
+    cleaned_source = source_file.strip() if isinstance(source_file, str) and source_file.strip() else None
+    cleaned_document_id = document_id.strip() if isinstance(document_id, str) and document_id.strip() else None
+    if not cleaned_source and not cleaned_document_id:
+        raise ValueError("source_file or document_id is required")
 
     chunk_limit = max_chunks if max_chunks is not None else settings.summary_default_chunks
     chunk_limit = max(1, min(chunk_limit, 20))
 
+    if cleaned_source:
+        where_clause = "d.source_file = :source_file"
+        sql_params: dict[str, Any] = {"source_file": cleaned_source, "chunk_limit": chunk_limit}
+    else:
+        where_clause = "c.document_id = :document_id"
+        sql_params = {"document_id": cleaned_document_id, "chunk_limit": chunk_limit}
+
     rows = db.execute(
         text(
-            """
+            f"""
             SELECT
                 c.id,
                 c.chunk_index,
@@ -803,12 +826,12 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
                 d.source_file
             FROM chunks c
             JOIN documents d ON d.id = c.document_id
-            WHERE d.source_file = :source_file
+            WHERE {where_clause}
             ORDER BY c.chunk_index
             LIMIT :chunk_limit
             """
         ),
-        {"source_file": cleaned_source, "chunk_limit": chunk_limit},
+        sql_params,
     ).mappings().all()
 
     contexts = [
@@ -825,10 +848,12 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
     ]
 
     if not contexts:
-        raise ValueError(f"No chunks found for source_file='{cleaned_source}'")
+        target = f"source_file='{cleaned_source}'" if cleaned_source else f"document_id='{cleaned_document_id}'"
+        raise ValueError(f"No chunks found for {target}")
 
+    summary_source = cleaned_source or contexts[0]["source_file"]
     citations = _build_citations(contexts)
-    prompt = build_summary_prompt(cleaned_source, contexts)
+    prompt = build_summary_prompt(summary_source, contexts)
 
     if settings.generation_backend.strip().lower() != "ollama":
         raise RuntimeError(f"Unsupported generation backend: {settings.generation_backend}")
@@ -864,9 +889,146 @@ def summarize_document(db: Session, source_file: str, max_chunks: int | None = N
         )
 
     return {
-        "source_file": cleaned_source,
+        "source_file": summary_source,
+        "document_id": cleaned_document_id,
         "summary": polished_summary,
         "citations": citations,
         "used_chunks": len(contexts),
         "mode": mode,
+    }
+
+
+_KEYWORD_STOPWORDS = {
+    "the",
+    "and",
+    "for",
+    "with",
+    "that",
+    "this",
+    "from",
+    "shall",
+    "have",
+    "been",
+    "were",
+    "will",
+    "each",
+    "such",
+    "which",
+    "under",
+    "upon",
+    "after",
+    "before",
+    "between",
+    "other",
+    "into",
+    "their",
+    "there",
+    "these",
+    "those",
+    "where",
+    "when",
+    "then",
+    "than",
+    "also",
+    "not",
+    "are",
+    "was",
+    "has",
+    "had",
+    "does",
+    "did",
+    "any",
+    "all",
+    "may",
+    "must",
+}
+
+
+def _parse_keyword_json(raw: str, limit: int) -> list[str] | None:
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.IGNORECASE).strip()
+    match = re.search(r"\[.*\]", cleaned, flags=re.DOTALL)
+    if not match:
+        return None
+    try:
+        data = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, list):
+        return None
+
+    keywords: list[str] = []
+    for item in data:
+        if isinstance(item, str):
+            keywords.append(item.strip())
+        elif isinstance(item, dict):
+            value = item.get("keyword") or item.get("phrase") or item.get("term")
+            if isinstance(value, str):
+                keywords.append(value.strip())
+    keywords = [keyword for keyword in keywords if keyword][:limit]
+    return keywords or None
+
+
+def _fallback_keywords(context: str, limit: int) -> list[str]:
+    tokens = re.findall(r"[a-zA-Z][a-zA-Z'-]{3,}", context.lower())
+    counts = Counter(token for token in tokens if token not in _KEYWORD_STOPWORDS)
+    return [word for word, _ in counts.most_common(limit)]
+
+
+def extract_keywords(db: Session, document_id: str, limit: int = 5) -> dict[str, Any]:
+    cleaned_document_id = document_id.strip()
+    if not cleaned_document_id:
+        raise ValueError("document_id cannot be empty")
+
+    rows = db.execute(
+        text(
+            """
+            SELECT c.chunk_text, d.source_file
+            FROM chunks c
+            JOIN documents d ON d.id = c.document_id
+            WHERE c.document_id = :document_id
+            ORDER BY c.chunk_index
+            LIMIT :chunk_limit
+            """
+        ),
+        {"document_id": cleaned_document_id, "chunk_limit": 40},
+    ).mappings().all()
+
+    if not rows:
+        raise ValueError(f"No chunks found for document_id='{cleaned_document_id}'")
+
+    source_file = rows[0]["source_file"]
+    context = "\n\n".join(str(row["chunk_text"]) for row in rows)
+    prompt = (
+        "You are a legal assistant. Extract the most important legal key concepts "
+        "and phrases from the provided document text.\n"
+        "Rules:\n"
+        "1) Use only the provided text.\n"
+        "2) Return ONLY a JSON array of short key phrases, for example "
+        '["procedural fairness", "unfair dismissal", "compensation"].\n'
+        f"3) Return between 5 and 10 items. Limit to {limit} items.\n"
+        "4) Do not add prose, commentary, or markdown outside the JSON array.\n\n"
+        f"Document text:\n{context}\n\n"
+        "Return only the JSON array."
+    )
+
+    keywords: list[str]
+    try:
+        raw = generate_answer_with_ollama(
+            base_url=settings.ollama_base_url,
+            model=settings.generation_model,
+            prompt=prompt,
+            timeout_seconds=settings.generation_timeout_seconds,
+        )
+        keywords = _parse_keyword_json(raw, limit)
+        if not keywords:
+            raise ValueError("LLM did not return valid keyword JSON")
+    except Exception:
+        if settings.generation_strict:
+            raise
+        keywords = _fallback_keywords(context, limit)
+
+    return {
+        "document_id": cleaned_document_id,
+        "source_file": source_file,
+        "keywords": keywords,
     }

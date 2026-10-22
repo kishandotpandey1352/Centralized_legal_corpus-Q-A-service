@@ -1,0 +1,131 @@
+.subtitle {
+  margin: 0 0 1rem;
+  color: #35535f;
+  max-width: 70ch;
+}
+
+.section-heading {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 1rem;
+  color: #1f3d47;
+}
+
+.empty {
+  color: #546e79;
+}
+
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.doc-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(20, 55, 62, 0.14);
+  border-radius: 0.75rem;
+  background: #fffefb;
+  padding: 0.8rem 1rem;
+}
+
+.doc-card.active {
+  border-color: #1e6f74;
+  box-shadow: 0 0 0 1px rgba(30, 111, 116, 0.35);
+}
+
+.doc-title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  color: #183942;
+}
+
+.doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ghost.small {
+  margin-top: 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.selected-block {
+  margin-top: 1.4rem;
+  border-top: 1px solid rgba(19, 49, 56, 0.15);
+  padding-top: 1rem;
+}
+
+.action-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.7rem 0;
+}
+
+.tab-btn {
+  border: 1px solid rgba(20, 55, 62, 0.2);
+  background: #f5f3ec;
+  color: #183942;
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tab-btn.active {
+  background: linear-gradient(130deg, #1e6f74 0%, #184a59 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.action-panel {
+  margin-top: 0.9rem;
+  border: 1px solid rgba(20, 55, 62, 0.14);
+  border-radius: 0.75rem;
+  background: #fffefb;
+  padding: 1rem;
+}
+
+.citation-list,
+.evidence-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0.9rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.citation-list li,
+.evidence-list li {
+  border: 1px solid rgba(20, 55, 62, 0.12);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.keyword-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.keyword-chip {
+  border: 1px solid rgba(30, 111, 116, 0.35);
+  background: rgba(30, 111, 116, 0.08);
+  color: #184a59;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}

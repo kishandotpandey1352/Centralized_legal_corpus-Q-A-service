@@ -90,7 +90,7 @@ export class HistoryService {
       return null;
     }
 
-    if (item.type !== 'query' && item.type !== 'answer' && item.type !== 'summary') {
+    if (item.type !== 'query' && item.type !== 'answer' && item.type !== 'summary' && item.type !== 'keywords') {
       return null;
     }
     if (item.status !== 'success' && item.status !== 'error') {

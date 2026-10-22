@@ -1,0 +1,116 @@
+<section class="panel">
+  <h2>Upload Document</h2>
+  <p class="subtitle">
+    Upload a legal document to extract, chunk, embed, and index it for retrieval and answering.
+  </p>
+
+  <div
+    class="dropzone"
+    [class.drag-active]="dragActive()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    data-testid="upload-dropzone"
+  >
+    <label>
+      <input
+        type="file"
+        accept=".pdf,.docx,.txt"
+        (change)="onFileSelected($event)"
+        data-testid="upload-file-input"
+      />
+      <span class="dropzone-text">Choose a file or drag &amp; drop it here</span>
+      <span class="dropzone-hint">Supported: PDF, DOCX, TXT — max 25 MB</span>
+    </label>
+  </div>
+
+  @if (file(); as selected) {
+    <p class="ok">
+      Selected: {{ selected.name }} ({{ formatSize(selected.size) }}) — {{ fileTypeLabel(selected) }}
+    </p>
+  }
+
+  <h3 class="section-heading">Optional Legal Metadata</h3>
+  <p class="subtitle">
+    All fields are optional. Leave them blank to skip metadata filters; the title is derived automatically.
+  </p>
+
+  <div class="form-grid">
+    <label>
+      Jurisdiction (optional)
+      <input
+        type="text"
+        [ngModel]="metadata().jurisdiction"
+        (ngModelChange)="updateField('jurisdiction', $event)"
+        placeholder="e.g. UK"
+      />
+    </label>
+
+    <label>
+      Court (optional)
+      <input
+        type="text"
+        [ngModel]="metadata().court"
+        (ngModelChange)="updateField('court', $event)"
+        placeholder="e.g. Supreme Court"
+      />
+    </label>
+
+    <label>
+      Canonical Citation (optional)
+      <input
+        type="text"
+        [ngModel]="metadata().canonical_citation"
+        (ngModelChange)="updateField('canonical_citation', $event)"
+        placeholder="e.g. [2024] UKSC 1"
+      />
+    </label>
+
+    <label>
+      Decision Date (optional)
+      <input
+        type="date"
+        [ngModel]="metadata().decision_date"
+        (ngModelChange)="updateField('decision_date', $event)"
+      />
+    </label>
+
+    <label>
+      Practice Area (optional)
+      <input
+        type="text"
+        [ngModel]="metadata().practice_area"
+        (ngModelChange)="updateField('practice_area', $event)"
+        placeholder="e.g. public law"
+      />
+    </label>
+  </div>
+
+  <button
+    type="button"
+    class="primary"
+    (click)="run()"
+    [disabled]="loading() || !file()"
+    data-testid="upload-run-button"
+  >
+    {{ loading() ? 'Uploading and indexing…' : 'Upload / Index' }}
+  </button>
+
+  @if (loading()) {
+    <p class="empty" data-testid="upload-loading-status">Uploading and indexing document…</p>
+  }
+
+  @if (error()) {
+    <p class="error" data-testid="upload-error">{{ error() }}</p>
+  }
+
+  @if (result(); as summary) {
+    <div class="result-block" data-testid="upload-result-block">
+      <h3 class="ok">Document indexed successfully</h3>
+      <p class="meta">
+        {{ summary.source_file }} | {{ summary.document_type }} | {{ summary.chunks_indexed }} chunks
+      </p>
+      <p>Document ID: {{ summary.document_id }}</p>
+    </div>
+  }
+</section>

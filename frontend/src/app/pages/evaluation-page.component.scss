@@ -1,0 +1,36 @@
+.section-heading {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 1rem;
+  color: #1f3d47;
+}
+
+.gate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.gate-table th,
+.gate-table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid rgba(20, 55, 62, 0.12);
+}
+
+.gate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ok {
+  color: #1e6f74;
+  font-weight: 700;
+}
+
+.fail {
+  color: #a1312d;
+  font-weight: 700;
+}

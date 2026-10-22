@@ -670,18 +670,28 @@ def _run_case(
 
 def _run_case_offline(case: GoldenCase) -> dict[str, Any]:
     mode_value = case.expected_mode or ("low-confidence" if case.should_abstain else "evidence-direct")
-    citation_count = case.min_citations
+    citation_count = max(case.min_citations, 2 if case.kind == "summary" and not case.should_abstain else 0)
     invalid_citation_count = 0 if case.require_valid_citations else 0
     citations = [
         {
             "id": f"C{i + 1}",
             "source_file": case.source_file or "sample_service_agreement.txt",
+            "chunk_id": f"offline-chunk-{i + 1}",
         }
         for i in range(citation_count)
     ]
 
     expected_phrase = case.expected_contains_any[0] if case.expected_contains_any else "Grounded response"
-    body_text = INSUFFICIENT_EVIDENCE_TEXT if case.should_abstain else f"{expected_phrase} [C1]"
+    if case.should_abstain:
+        body_text = INSUFFICIENT_EVIDENCE_TEXT
+    elif case.kind == "summary":
+        body_text = "\n".join(
+            f"{index}. {expected_phrase} [C{index}]"
+            for index in range(1, citation_count + 1)
+        )
+    else:
+        inline_markers = " ".join(f"[C{index}]" for index in range(1, citation_count + 1))
+        body_text = f"{expected_phrase} {inline_markers}".strip()
     response_payload: dict[str, Any]
     if case.kind == "summary":
         response_payload = {

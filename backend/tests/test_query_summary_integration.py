@@ -8,7 +8,7 @@ from app.main import app
 def test_query_summary_returns_citation_structure(monkeypatch) -> None:
     source_file = "sample_service_agreement.txt"
 
-    def fake_summarize_document(db, source_file: str, max_chunks: int = 6):
+    def fake_summarize_document(db, source_file: str | None = None, document_id: str | None = None, max_chunks: int = 6):
         assert source_file == "sample_service_agreement.txt"
         assert max_chunks == 4
         return {
